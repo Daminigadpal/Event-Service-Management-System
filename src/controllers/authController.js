@@ -1,15 +1,11 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const { validationResult } = require("express-validator");
 
-// helper — create token
+// Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
+    { id: user._id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: "30d" }
   );
@@ -25,36 +21,33 @@ exports.register = async (req, res) => {
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        errors: errors.array(),
+        errors: errors.array()
       });
     }
 
     const { name, email, password, phone, role } = req.body;
 
-    // Check existing user
+    // Check if user already exists
     let existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "User already exists"
       });
     }
 
-    // Create user
+    // Create user (password will be hashed automatically by model)
     const user = new User({
       name,
       email,
       password,
       phone: phone || "",
-      role: role || "customer",
+      role: role || "customer"
     });
-
-    // Hash password (only if model doesn't already hash)
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
 
     await user.save();
 
+    // Generate token
     const token = generateToken(user);
 
     res.status(201).json({
@@ -64,14 +57,15 @@ exports.register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-      },
+        role: user.role
+      }
     });
+
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({
       success: false,
-      message: "Server error during registration",
+      message: "Server error during registration"
     });
   }
 };
@@ -87,16 +81,17 @@ exports.login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please provide email and password",
+        message: "Please provide email and password"
       });
     }
 
+    // Find user with password
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid credentials"
       });
     }
 
@@ -105,13 +100,14 @@ exports.login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid credentials"
       });
     }
 
+    // Generate token
     const token = generateToken(user);
 
-    user.password = undefined;
+    user.password = undefined; // remove password from response
 
     res.status(200).json({
       success: true,
@@ -120,35 +116,29 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-      },
+        role: user.role
+      }
     });
+
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({
       success: false,
-      message: "Server error during login",
+      message: "Server error during login"
     });
   }
 };
 
 // -----------------------------------------
-// GET LOGGED-IN USER
+// GET CURRENT USER
 // GET /api/auth/me
 // -----------------------------------------
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
     console.error("Get user error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-    });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
