@@ -1,8 +1,9 @@
+
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const authController = require('../controllers/authController');
-const { auth } = require('../middleware/auth');  // Updated this line
+const auth = require('../middleware/auth');
 
 // @route   POST /api/auth/register
 // @access  Public

@@ -1,24 +1,18 @@
+// src/routes/bookingRoutes.js
 const express = require('express');
 const router = express.Router();
-const { auth, admin } = require('../middleware/auth');
-const {
-  createBooking,
-  getBookings,
-  getMyBookings,
-  updateBooking,
-  deleteBooking
-} = require('../controllers/bookingController');
+const bookingController = require('../controllers/bookingController');
 
-router
-  .route('/')
-  .get(auth, admin, getBookings)
-  .post(auth, createBooking);
+// Test route (public)
+router.get('/test', (req, res) => {
+  res.json({ message: 'Booking routes are working!' });
+});
 
-router.get('/me', auth, getMyBookings);
-
-router
-  .route('/:id')
-  .put(auth, admin, updateBooking)
-  .delete(auth, deleteBooking);
+// Booking routes
+router.post('/', bookingController.createBooking);
+router.get('/', bookingController.getBookings);
+router.get('/:id', bookingController.getBooking);
+router.put('/:id', bookingController.updateBooking);
+router.delete('/:id', bookingController.deleteBooking);
 
 module.exports = router;

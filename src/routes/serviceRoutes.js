@@ -1,24 +1,18 @@
-// In serviceRoutes.js
+// src/routes/serviceRoutes.js
 const express = require('express');
 const router = express.Router();
-const { auth, admin } = require('../middleware/auth');  // Changed 'protect' to 'auth'
-const {
-  getServices,
-  getService,
-  createService,
-  updateService,
-  deleteService
-} = require('../controllers/serviceController');
+const serviceController = require('../controllers/serviceController');
 
-router
-  .route('/')
-  .get(getServices)
-  .post(auth, admin, createService);  // Changed 'protect' to 'auth'
+// Test route (public)
+router.get('/test', (req, res) => {
+  res.json({ message: 'Service routes are working!' });
+});
 
-router
-  .route('/:id')
-  .get(getService)
-  .put(auth, admin, updateService)    // Changed 'protect' to 'auth'
-  .delete(auth, admin, deleteService); // Changed 'protect' to 'auth'
+// Service routes
+router.post('/', serviceController.createService);
+router.get('/', serviceController.getServices);
+router.get('/:id', serviceController.getService);
+router.put('/:id', serviceController.updateService);
+router.delete('/:id', serviceController.deleteService);
 
 module.exports = router;

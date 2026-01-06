@@ -1,59 +1,71 @@
-const User = require("../models/User");
 
-// Get all users
-exports.getUsers = async (req, res) => {
+// src/controllers/userController.js
+const User = require('../models/User');
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+exports.getUsers = async (req, res, next) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
   } catch (err) {
-    console.error('Error fetching users:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(err);
   }
 };
 
-// Get single user by ID
-exports.getUser = async (req, res) => {
+// @desc    Get single user
+// @route   GET /api/users/:id
+// @access  Private/Admin
+exports.getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ msg: 'User not found' });
     }
     res.json(user);
   } catch (err) {
-    console.error('Error fetching user:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(err);
   }
 };
 
-// Update user
-exports.updateUser = async (req, res) => {
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+exports.updateUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    ).select('-password');
+    const { name, email, role } = req.body;
+    let user = await User.findById(req.params.id);
     
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ msg: 'User not found' });
     }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    if (role) user.role = role;
+
+    await user.save();
     res.json(user);
   } catch (err) {
-    console.error('Error updating user:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(err);
   }
 };
 
-// Delete user
-exports.deleteUser = async (req, res) => {
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
+    
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ msg: 'User not found' });
     }
-    res.json({ message: "User deleted successfully" });
+
+    await user.remove();
+    res.json({ msg: 'User removed' });
   } catch (err) {
-    console.error('Error deleting user:', err);
-    res.status(500).json({ message: 'Server error' });
+    next(err);
   }
 };

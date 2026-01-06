@@ -1,122 +1,77 @@
-const Booking = require("../models/Booking");
-const asyncHandler = require("../middleware/async");
+// src/controllers/bookingController.js
+const Booking = require('../models/Booking');
 
-// @desc    Create new booking
-// @route   POST /api/bookings
-// @access  Private
-exports.createBooking = asyncHandler(async (req, res) => {
-  const { service, date, notes } = req.body;
-  
-  // Add user to req.body
-  req.body.user = req.user.id;
+const bookingController = {
+  // @desc    Create a booking
+  // @route   POST /api/bookings
+  createBooking: async (req, res, next) => {
+    try {
+      const booking = new Booking(req.body);
+      await booking.save();
+      res.status(201).json(booking);
+    } catch (err) {
+      next(err);
+    }
+  },
 
-  const booking = await Booking.create(req.body);
-  
-  res.status(201).json({
-    success: true,
-    data: booking
-  });
-});
+  // @desc    Get all bookings
+  // @route   GET /api/bookings
+  getBookings: async (req, res, next) => {
+    try {
+      const bookings = await Booking.find().populate('user service');
+      res.json(bookings);
+    } catch (err) {
+      next(err);
+    }
+  },
 
-// @desc    Get all bookings
-// @route   GET /api/bookings
-// @access  Private/Admin
-exports.getBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find()
-    .populate('user', 'name email')
-    .populate('service', 'name price');
-  
-  res.status(200).json({
-    success: true,
-    count: bookings.length,
-    data: bookings
-  });
-});
+  // @desc    Get single booking
+  // @route   GET /api/bookings/:id
+  getBooking: async (req, res, next) => {
+    try {
+      const booking = await Booking.findById(req.params.id).populate('user service');
+      if (!booking) {
+        return res.status(404).json({ msg: 'Booking not found' });
+      }
+      res.json(booking);
+    } catch (err) {
+      next(err);
+    }
+  },
 
-// @desc    Get single booking
-// @route   GET /api/bookings/:id
-// @access  Private
-exports.getBooking = asyncHandler(async (req, res) => {
-  const booking = await Booking.findById(req.params.id)
-    .populate('user', 'name email')
-    .populate('service', 'name price');
+  // @desc    Update booking
+  // @route   PUT /api/bookings/:id
+  updateBooking: async (req, res, next) => {
+    try {
+      const booking = await Booking.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true }
+      ).populate('user service');
+      
+      if (!booking) {
+        return res.status(404).json({ msg: 'Booking not found' });
+      }
+      res.json(booking);
+    } catch (err) {
+      next(err);
+    }
+  },
 
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found'
-    });
+  // @desc    Delete booking
+  // @route   DELETE /api/bookings/:id
+  deleteBooking: async (req, res, next) => {
+    try {
+      const booking = await Booking.findById(req.params.id);
+      if (!booking) {
+        return res.status(404).json({ msg: 'Booking not found' });
+      }
+      await booking.remove();
+      res.json({ msg: 'Booking removed' });
+    } catch (err) {
+      next(err);
+    }
   }
+};
 
-  res.status(200).json({
-    success: true,
-    data: booking
-  });
-});
-
-// @desc    Get current user bookings
-// @route   GET /api/bookings/me
-// @access  Private
-exports.getMyBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find({ user: req.user.id })
-    .populate('service', 'name price');
-  
-  res.status(200).json({
-    success: true,
-    count: bookings.length,
-    data: bookings
-  });
-});
-
-// @desc    Update booking
-// @route   PUT /api/bookings/:id
-// @access  Private/Admin
-exports.updateBooking = asyncHandler(async (req, res) => {
-  let booking = await Booking.findById(req.params.id);
-
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found'
-    });
-  }
-
-  booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true
-  });
-
-  res.status(200).json({
-    success: true,
-    data: booking
-  });
-});
-
-// @desc    Delete booking
-// @route   DELETE /api/bookings/:id
-// @access  Private
-exports.deleteBooking = asyncHandler(async (req, res) => {
-  const booking = await Booking.findById(req.params.id);
-
-  if (!booking) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found'
-    });
-  }
-
-  // Make sure user is booking owner or admin
-  if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-    return res.status(401).json({
-      success: false,
-      message: 'Not authorized to delete this booking'
-    });
-  }
-
-  await booking.remove();
-
-  res.status(200).json({
-    success: true,
-    data: {}
-  });
-});
+module.exports = bookingController;

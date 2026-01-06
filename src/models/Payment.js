@@ -1,6 +1,7 @@
+// src/models/Payment.js
 const mongoose = require('mongoose');
 
-const paymentSchema = new mongoose.Schema({
+const PaymentSchema = new mongoose.Schema({
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
@@ -17,14 +18,16 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    required: true,
     enum: ['pending', 'completed', 'failed', 'refunded'],
     default: 'pending'
   },
-  transactionId: String,
-  paidAt: {
-    type: Date,
-    default: Date.now
+  transactionId: {
+    type: String,
+    required: true
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = mongoose.model('Payment', PaymentSchema);

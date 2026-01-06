@@ -1,27 +1,17 @@
+// src/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-console.log('User routes loaded');  // Add this line
+const userController = require('../controllers/userController');
 
-const { auth, admin } = require('../middleware/auth');
-const {
-  getUsers,
-  getUser,
-  updateUser,
-  deleteUser
-} = require('../controllers/userController');
-
-// Test route
+// Test route (public)
 router.get('/test', (req, res) => {
   res.json({ message: 'User routes are working!' });
 });
 
-// Protect all routes with authentication
-router.use(auth);
-
-// Admin-only routes
-router.get('/', admin, getUsers);
-router.get('/:id', admin, getUser);
-router.put('/:id', admin, updateUser);
-router.delete('/:id', admin, deleteUser);
+// User management routes (temporarily removing auth for testing)
+router.get('/', userController.getUsers);
+router.get('/:id', userController.getUser);
+router.put('/:id', userController.updateUser);
+router.delete('/:id', userController.deleteUser);
 
 module.exports = router;

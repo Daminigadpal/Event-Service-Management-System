@@ -1,45 +1,77 @@
+// src/controllers/paymentController.js
 const Payment = require('../models/Payment');
-const Booking = require('../models/Booking');
-const asyncHandler = require('../middleware/async');
 
-// @desc    Create a payment
-// @route   POST /api/payments
-// @access  Private
-exports.createPayment = asyncHandler(async (req, res) => {
-  const { booking, amount, paymentMethod, status } = req.body;
+const paymentController = {
+  // @desc    Create a payment
+  // @route   POST /api/payments
+  createPayment: async (req, res, next) => {
+    try {
+      const payment = new Payment(req.body);
+      await payment.save();
+      res.status(201).json(payment);
+    } catch (err) {
+      next(err);
+    }
+  },
 
-  // Check if booking exists
-  const bookingExists = await Booking.findById(booking);
-  if (!bookingExists) {
-    return res.status(404).json({
-      success: false,
-      message: 'Booking not found'
-    });
+  // @desc    Get all payments
+  // @route   GET /api/payments
+  getPayments: async (req, res, next) => {
+    try {
+      const payments = await Payment.find().populate('booking');
+      res.json(payments);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // @desc    Get single payment
+  // @route   GET /api/payments/:id
+  getPayment: async (req, res, next) => {
+    try {
+      const payment = await Payment.findById(req.params.id).populate('booking');
+      if (!payment) {
+        return res.status(404).json({ msg: 'Payment not found' });
+      }
+      res.json(payment);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // @desc    Update payment
+  // @route   PUT /api/payments/:id
+  updatePayment: async (req, res, next) => {
+    try {
+      const payment = await Payment.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true, runValidators: true }
+      ).populate('booking');
+      
+      if (!payment) {
+        return res.status(404).json({ msg: 'Payment not found' });
+      }
+      res.json(payment);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // @desc    Delete payment
+  // @route   DELETE /api/payments/:id
+  deletePayment: async (req, res, next) => {
+    try {
+      const payment = await Payment.findById(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ msg: 'Payment not found' });
+      }
+      await payment.remove();
+      res.json({ msg: 'Payment removed' });
+    } catch (err) {
+      next(err);
+    }
   }
+};
 
-  // Create payment
-  const payment = await Payment.create({
-    booking,
-    amount,
-    paymentMethod,
-    status,
-    user: req.user.id
-  });
-
-  res.status(201).json({
-    success: true,
-    data: payment
-  });
-});
-
-// @desc    Get all payments
-// @route   GET /api/payments
-// @access  Private/Admin
-exports.getPayments = asyncHandler(async (req, res) => {
-  const payments = await Payment.find().populate('booking', 'date status');
-  res.status(200).json({
-    success: true,
-    count: payments.length,
-    data: payments
-  });
-});
+module.exports = paymentController;

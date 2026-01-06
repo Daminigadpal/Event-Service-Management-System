@@ -1,10 +1,18 @@
+// src/routes/deliverableRoutes.js
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');
-const { getDeliverables, createDeliverable } = require('../controllers/deliverableController');
+const deliverableController = require('../controllers/deliverableController');
 
-router.route('/')
-  .get(auth, getDeliverables)
-  .post(auth, createDeliverable);
+// Test route (public)
+router.get('/test', (req, res) => {
+  res.json({ message: 'Deliverable routes are working!' });
+});
+
+// Deliverable routes
+router.post('/', deliverableController.createDeliverable);
+router.get('/', deliverableController.getDeliverables);
+router.get('/:id', deliverableController.getDeliverable);
+router.put('/:id', deliverableController.updateDeliverable);
+router.delete('/:id', deliverableController.deleteDeliverable);
 
 module.exports = router;

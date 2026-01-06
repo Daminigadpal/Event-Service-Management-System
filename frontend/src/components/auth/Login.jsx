@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../api/auth';
-
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -26,10 +27,20 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      await authService.login({ email, password });
-      navigate('/dashboard'); // Redirect to dashboard after successful login
-    } catch (err) {
-      setError(err.message || 'Login failed');
+      
+      const response = await authService.login({ email, password });
+      
+      if (response && response.token) {
+        toast.success('Login successful! Redirecting...');
+        // Small delay before redirect to show the success message
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
