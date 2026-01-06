@@ -1,9 +1,15 @@
-// Check frontend/src/components/PrivateRoute.jsx
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
+import authService from '../services/auth';
 
-const PrivateRoute = () => {
+const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  return token ? <Outlet /> : <Navigate to="/login" />;
+  const user = authService.getCurrentUser();
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
 export default PrivateRoute;
