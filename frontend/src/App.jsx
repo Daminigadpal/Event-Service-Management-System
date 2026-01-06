@@ -31,7 +31,11 @@ function App() {
   return (
     <ErrorBoundary>
       <React.Suspense fallback={<Loading />}>
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
