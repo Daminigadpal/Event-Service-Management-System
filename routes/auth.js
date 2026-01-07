@@ -7,8 +7,8 @@ const {
   logout,
   updateDetails,
   updatePassword
-} = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
+} = require('./../src/controllers/authController');
+const { protect } = require('./../src/middleware/auth');
 
 // Public routes
 router.post('/register', register);

@@ -7,11 +7,19 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-// Import routes
+// Import routes from root routes directory
 const authRoutes = require('./routes/auth');
-const serviceRoutes = require('./routes/services');
 const bookingRoutes = require('./routes/bookings');
+const customerRoutes = require('./routes/customers');
 const paymentRoutes = require('./routes/payments');
+
+// Import routes from src/routes directory
+const serviceRoutes = require('./src/routes/serviceRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+const deliverableRoutes = require('./src/routes/deliverableRoutes');
+const eventRoutes = require('./src/routes/eventRoutes');
+const packageRoutes = require('./src/routes/packageRoutes');
+const scheduleRoutes = require('./src/routes/scheduleRoutes');
 
 // Initialize express
 const app = express();
@@ -51,6 +59,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/deliverables', deliverableRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/packages', packageRoutes);
+app.use('/api/schedules', scheduleRoutes);
 
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {

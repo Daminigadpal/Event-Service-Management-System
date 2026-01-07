@@ -25,10 +25,30 @@ const ServiceSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: true
   }
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Cascade delete bookings when a service is deleted
+ServiceSchema.pre('remove', async function(next) {
+  console.log(`Bookings being removed from service ${this._id}`);
+  await this.model('Booking').deleteMany({ service: this._id });
+  next();
+});
+
+// Reverse populate with virtuals
+ServiceSchema.virtual('bookings', {
+  ref: 'Booking',
+  localField: '_id',
+  foreignField: 'service',
+  justOne: false
 });
 
 module.exports = mongoose.model('Service', ServiceSchema);
