@@ -9,9 +9,9 @@ const path = require('path');
 
 // Import routes from root routes directory
 const authRoutes = require('./routes/auth');
-const bookingRoutes = require('./routes/bookings');
-const customerRoutes = require('./routes/customers');
-const paymentRoutes = require('./routes/payments');
+const bookingRoutes = require('./src/routes/bookingRoutes');
+const customerRoutes = require('./src/routes/customerRoutes');
+const paymentRoutes = require('./src/routes/paymentRoutes');
 
 // Import routes from src/routes directory
 const serviceRoutes = require('./src/routes/serviceRoutes');
@@ -20,6 +20,11 @@ const deliverableRoutes = require('./src/routes/deliverableRoutes');
 const eventRoutes = require('./src/routes/eventRoutes');
 const packageRoutes = require('./src/routes/packageRoutes');
 const scheduleRoutes = require('./src/routes/scheduleRoutes');
+
+
+// Then use it like this:
+
+
 
 // Initialize express
 const app = express();
@@ -85,7 +90,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const server = app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);

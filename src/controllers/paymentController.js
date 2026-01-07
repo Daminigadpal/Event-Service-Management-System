@@ -1,77 +1,73 @@
-// src/controllers/paymentController.js
 const Payment = require('../models/Payment');
 
-const paymentController = {
-  // @desc    Create a payment
-  // @route   POST /api/payments
-  createPayment: async (req, res, next) => {
-    try {
-      const payment = new Payment(req.body);
-      await payment.save();
-      res.status(201).json(payment);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Get all payments
-  // @route   GET /api/payments
-  getPayments: async (req, res, next) => {
-    try {
-      const payments = await Payment.find().populate('booking');
-      res.json(payments);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Get single payment
-  // @route   GET /api/payments/:id
-  getPayment: async (req, res, next) => {
-    try {
-      const payment = await Payment.findById(req.params.id).populate('booking');
-      if (!payment) {
-        return res.status(404).json({ msg: 'Payment not found' });
-      }
-      res.json(payment);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Update payment
-  // @route   PUT /api/payments/:id
-  updatePayment: async (req, res, next) => {
-    try {
-      const payment = await Payment.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true, runValidators: true }
-      ).populate('booking');
-      
-      if (!payment) {
-        return res.status(404).json({ msg: 'Payment not found' });
-      }
-      res.json(payment);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Delete payment
-  // @route   DELETE /api/payments/:id
-  deletePayment: async (req, res, next) => {
-    try {
-      const payment = await Payment.findById(req.params.id);
-      if (!payment) {
-        return res.status(404).json({ msg: 'Payment not found' });
-      }
-      await payment.remove();
-      res.json({ msg: 'Payment removed' });
-    } catch (err) {
-      next(err);
-    }
+// @desc    Create a payment
+// @route   POST /api/payments
+// @access  Private
+exports.createPayment = async (req, res) => {
+  try {
+    const payment = await Payment.create(req.body);
+    res.status(201).json({ success: true, data: payment });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
-module.exports = paymentController;
+// @desc    Get all payments
+// @route   GET /api/payments
+// @access  Private/Admin
+exports.getPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find();
+    res.status(200).json({ success: true, count: payments.length, data: payments });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Get single payment
+// @route   GET /api/payments/:id
+// @access  Private/Admin
+exports.getPayment = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+    res.status(200).json({ success: true, data: payment });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Update payment
+// @route   PUT /api/payments/:id
+// @access  Private/Admin
+exports.updatePayment = async (req, res) => {
+  try {
+    const payment = await Payment.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+    res.status(200).json({ success: true, data: payment });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+// @desc    Delete payment
+// @route   DELETE /api/payments/:id
+// @access  Private/Admin
+exports.deletePayment = async (req, res) => {
+  try {
+    const payment = await Payment.findByIdAndDelete(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Payment not found' });
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};

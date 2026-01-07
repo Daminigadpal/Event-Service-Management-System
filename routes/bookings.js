@@ -6,10 +6,10 @@ const {
   getBooking, 
   updateBooking, 
   deleteBooking 
-} = require('../controllers/bookingController');
-const { protect, authorize } = require('../middleware/auth');
-const advancedResults = require('../middleware/advancedResults');
-const Booking = require('../models/Booking');
+} = require('../src/controllers/bookingController');
+const { protect, authorize } = require('../src/middleware/auth');
+const advancedResults = require('../../middleware/advancedResults');
+const Booking = require('../src/models/Booking');
 
 router.route('/')
   .get(

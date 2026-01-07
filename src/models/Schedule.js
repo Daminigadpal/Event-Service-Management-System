@@ -1,19 +1,33 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const scheduleSchema = new mongoose.Schema(
-  {
-    booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
-    staff: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-
-    date: Date,
-
-    status: {
-      type: String,
-      enum: ["Scheduled", "Busy", "Available"],
-      default: "Scheduled"
-    }
+const ScheduleSchema = new mongoose.Schema({
+  staff: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  { timestamps: true }
-);
+  date: {
+    type: Date,
+    required: true
+  },
+  startTime: {
+    type: String,
+    required: true
+  },
+  endTime: {
+    type: String,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['scheduled', 'completed', 'cancelled'],
+    default: 'scheduled'
+  },
+  notes: {
+    type: String
+  }
+}, {
+  timestamps: true
+});
 
-module.exports = mongoose.model("Schedule", scheduleSchema);
+module.exports = mongoose.model('Schedule', ScheduleSchema);

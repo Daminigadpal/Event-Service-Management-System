@@ -12,7 +12,7 @@ async function testConnection() {
     const dbs = await mongoose.connection.db.admin().listDatabases();
     console.log('Available databases:', dbs.databases.map(db => db.name));
     
-    // Close the connection
+    // Close the connectionnode index.js
     await mongoose.connection.close();
     console.log('Connection closed.');
   } catch (error) {

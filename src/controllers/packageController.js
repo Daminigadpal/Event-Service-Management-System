@@ -1,4 +1,4 @@
-const Package =required ("../models/package");
+const Package = require("../models/package");
 exports.createPackage= async(req,res)=>{
     try{
         const data= await Package.create(req.body);

@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');
+const advancedResults = require('../../middleware/advancedResults');
 
 // Test route (public)
 router.get('/test', (req, res) => {
