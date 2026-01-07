@@ -1,15 +1,14 @@
-import { Navigate } from 'react-router-dom';
-import authService from '../api/auth';
+// frontend/src/components/PrivateRoute.jsx
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  const user = authService.getCurrentUser();
+const PrivateRoute = ({ isAuthenticated }) => {
+  const location = useLocation();
 
-  if (!token || !user) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return <Outlet />;
 };
 
 export default PrivateRoute;

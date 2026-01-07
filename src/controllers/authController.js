@@ -1,4 +1,3 @@
-// Check src/controllers/authController.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -6,13 +5,22 @@ const User = require('../models/User');
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
+  console.log('Register request received:', {
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role
+  });
+
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, role = 'customer' } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User already exists' 
+      });
     }
 
     // Create user
@@ -21,7 +29,7 @@ exports.register = async (req, res) => {
       email,
       password,
       phone: phone || '',
-      role: 'user'
+      role
     });
 
     // Save user to database
@@ -45,9 +53,13 @@ exports.register = async (req, res) => {
         role: user.role
       }
     });
-  } catch (err) {
-    console.error('Registration error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
 
@@ -61,13 +73,19 @@ exports.login = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid credentials' 
+      });
     }
 
     // Create token
@@ -88,9 +106,13 @@ exports.login = async (req, res) => {
         role: user.role
       }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
 
@@ -100,9 +122,16 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
-    res.status(200).json({ success: true, data: user });
-  } catch (err) {
-    console.error('Get user error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(200).json({ 
+      success: true, 
+      data: user 
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };

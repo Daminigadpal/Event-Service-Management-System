@@ -1,4 +1,4 @@
-// frontend/src/services/auth.js
+// frontend/src/api/auth.js
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api/auth';
@@ -14,8 +14,8 @@ const register = async (userData) => {
 };
 
 // Login user
-const login = async (userData) => {
-  const response = await axios.post(`${API_URL}/login`, userData);
+const login = async (credentials) => {
+  const response = await axios.post(`${API_URL}/login`, credentials);
   if (response.data.token) {
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -39,12 +39,28 @@ const getToken = () => {
   return localStorage.getItem('token');
 };
 
+// Set auth token in axios headers
+const setAuthToken = (token) => {
+  if (token) {
+    axios.defaults.headers.common['x-auth-token'] = token;
+  } else {
+    delete axios.defaults.headers.common['x-auth-token'];
+  }
+};
+
+// Initialize axios headers
+const token = getToken();
+if (token) {
+  setAuthToken(token);
+}
+
 const authService = {
   register,
   login,
   logout,
   getCurrentUser,
-  getToken
+  getToken,
+  setAuthToken
 };
 
 export default authService;
