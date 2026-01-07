@@ -1,6 +1,7 @@
+// frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import authService from '../api/auth';
+import { useNavigate, Link } from 'react-router-dom';
+import { login } from '../api/auth';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,7 @@ const Login = () => {
     password: ''
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -19,12 +21,22 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
     try {
-      await authService.login(formData);
-      // Redirect to dashboard after successful login
+      const user = await login({
+        email: formData.email,
+        password: formData.password
+      });
+      console.log('Login successful:', user);
+      // Redirect to dashboard or home page after successful login
       navigate('/dashboard');
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed. Please try again.');
+      console.error('Login error:', error.message);
+      setError(error.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -41,6 +53,7 @@ const Login = () => {
             value={formData.email}
             onChange={handleChange}
             required
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -51,16 +64,15 @@ const Login = () => {
             value={formData.password}
             onChange={handleChange}
             required
+            disabled={isLoading}
           />
         </div>
-        <button type="submit">Login</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
-      <div className="signup-link" style={{ marginTop: '1rem', textAlign: 'center' }}>
-        Don't have an account?{' '}
-        <a href="/register" style={{ color: '#4CAF50', textDecoration: 'none' }} onClick={(e) => {
-          e.preventDefault();
-          navigate('/register');
-        }}>Sign Up</a>
+      <div className="signup-link">
+        Don't have an account? <Link to="/register">Sign up</Link>
       </div>
     </div>
   );

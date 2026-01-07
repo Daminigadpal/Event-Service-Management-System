@@ -1,50 +1,25 @@
-const jwt = require('jsonwebtoken');
+// controllers/authController.js
 const User = require('../models/User');
+const ErrorResponse = require('../utils/errorResponse');
+const asyncHandler = require('../middleware/async');
 
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = async (req, res) => {
-  console.log('Register request received:', {
-    body: req.body,
-    headers: req.headers
-  });
+// Helper function to send token response
+const sendTokenResponse = (user, statusCode, res) => {
+  // Create token
+  const token = user.getSignedJwtToken();
 
-  try {
-    const { name, email, password, phone, role = 'customer' } = req.body;
+  const options = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production'
+  };
 
-    // Check if user exists
-    let user = await User.findOne({ email });
-    if (user) {
-      console.log('User already exists:', email);
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User already exists' 
-      });
-    }
-
-    // Create user
-    user = new User({
-      name,
-      email,
-      password,
-      phone: phone || '',
-      role
-    });
-
-    // Save user to database
-    await user.save();
-    console.log('User created successfully:', user.email);
-
-    // Create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
-    });
-
-    // Remove password from response
-    user.password = undefined;
-
-    res.status(201).json({
+  res
+    .status(statusCode)
+    .cookie('token', token, options)
+    .json({
       success: true,
       token,
       user: {
@@ -54,97 +29,102 @@ exports.register = async (req, res) => {
         role: user.role
       }
     });
-  } catch (error) {
-    console.error('Registration error:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+};
+
+// @desc    Register user
+const register = async (req, res, next) => {
+  try {
+    console.log('Registration request body:', req.body);
+    const { name, email, password, role = 'user' } = req.body;
+
+    // Basic validation
+    if (!name || !email || !password) {
+      console.log('Validation failed - Missing required fields');
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide name, email, and password'
+      });
+    }
+
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('User already exists:', email);
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists with this email'
+      });
+    }
+
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: role || 'user' // Default to 'user' if role not provided
     });
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during registration',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+
+    console.log('User created successfully:', user.email);
+    sendTokenResponse(user, 201, res);
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        error: messages.join(', ')
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Server error during registration',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
 
 // @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-exports.login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user exists
+    // Validate email & password
+    if (!email || !password) {
+      return next(new ErrorResponse('Please provide an email and password', 400));
+    }
+
+    // Check for user
     const user = await User.findOne({ email }).select('+password');
+
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+      return next(new ErrorResponse('Invalid credentials', 401));
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
+
     if (!isMatch) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+      return next(new ErrorResponse('Invalid credentials', 401));
     }
 
-    // Create token
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '30d',
-    });
-
-    // Remove password from response
-    user.password = undefined;
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
+    sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during login',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    next(error);
   }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
-exports.getMe = async (req, res) => {
+// @desc    Get current logged in user
+const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.status(200).json({ 
-      success: true, 
-      data: user 
-    });
+    const user = await User.findById(req.user.id);
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    next(error);
   }
 };
 
-// @desc    Logout user
-// @route   GET /api/auth/logout
-// @access  Private
-exports.logout = async (req, res) => {
+// @desc    Log user out
+const logout = async (req, res, next) => {
   try {
     res.cookie('token', 'none', {
       expires: new Date(Date.now() + 10 * 1000),
@@ -156,11 +136,13 @@ exports.logout = async (req, res) => {
       data: {}
     });
   } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error during logout',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    next(error);
   }
+};
+
+module.exports = {
+  register: asyncHandler(register),
+  login: asyncHandler(login),
+  getMe: asyncHandler(getMe),
+  logout: asyncHandler(logout)
 };

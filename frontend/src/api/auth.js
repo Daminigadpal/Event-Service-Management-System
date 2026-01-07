@@ -1,118 +1,93 @@
 // frontend/src/api/auth.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5001/api/auth';
+const API_URL = 'http://localhost:5002/api'; // Backend server port
 
-// Set up axios defaults
+// Create axios instance
 const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
+  baseURL: API_URL,
+  withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
-// Set auth token in axios headers
-const setAuthToken = (token) => {
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    localStorage.setItem('token', token);
-  } else {
-    delete api.defaults.headers.common['Authorization'];
-    localStorage.removeItem('token');
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
   }
+);
+
+// Check if user is authenticated
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('token');
 };
 
 // Register user
-const register = async (userData) => {
+export const register = async (userData) => {
   try {
-    console.log('Sending registration request with data:', userData);
     const response = await api.post('/auth/register', userData);
-    console.log('Registration response:', response.data);
-    
-    if (response.data.token) {
-      setAuthToken(response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
     return response.data;
   } catch (error) {
-    console.error('Registration API error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    throw error;
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error('Registration failed:', errorMessage);
+    throw new Error(errorMessage || 'Registration failed. Please try again.');
   }
 };
 
 // Login user
-const login = async (credentials) => {
+export const login = async (credentials) => {
   try {
     const response = await api.post('/auth/login', credentials);
-    if (response.data.token) {
-      setAuthToken(response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    const { token, user } = response.data;
+    if (token) {
+      localStorage.setItem('token', token);
     }
+    return user;
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error('Login failed:', errorMessage);
+    throw new Error(errorMessage || 'Login failed. Please check your credentials.');
+  }
+};
+
+// Get current user
+export const getMe = async () => {
+  try {
+    const response = await api.get('/auth/me');
     return response.data;
   } catch (error) {
-    console.error('Login API error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
+    console.error('Failed to fetch user:', error);
     throw error;
   }
 };
 
 // Logout user
-const logout = async () => {
+export const logout = async () => {
   try {
     await api.post('/auth/logout');
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Logout failed:', error);
   } finally {
-    setAuthToken(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem('token');
   }
 };
-
-// Get current user
-const getCurrentUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
-};
-
-// Check if user is authenticated
-const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const decoded = JSON.parse(atob(token.split('.')[1]));
-      return decoded.exp > Date.now() / 1000;
-    } catch (e) {
-      return false;
-    }
-  }
-  return false;
-};
-
-// Initialize auth token from localStorage
-const initAuth = () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    setAuthToken(token);
-  }
-};
-
-// Initialize auth when the module loads
-initAuth();
-
-const authService = {
-  register,
-  login,
-  logout,
-  getCurrentUser,
-  isAuthenticated,
-  setAuthToken
-};
-
-export default authService;

@@ -27,5 +27,13 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daminigadpal09/Event-Management-System.git"
+  },
+  "bugs": {
+    "url": "https://github.com/daminigadpal09/Event-Management-System/issues"
+  },
+  "homepage": "https://github.com/daminigadpal09/Event-Management-System#readme"
 }

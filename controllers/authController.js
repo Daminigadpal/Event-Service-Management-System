@@ -1,11 +1,11 @@
-// controllers/authController.js
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+// src/controllers/authController.js
+
+// ... (your existing login code)
 
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
-const register = async (req, res, next) => {
+const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -14,83 +14,35 @@ const register = async (req, res, next) => {
       name,
       email,
       password,
-      role
+      role: role || 'user'
     });
 
     // Create token
     const token = user.getSignedJwtToken();
+    const userObj = user.toObject();
+    delete userObj.password;
 
-    res.status(200).json({ success: true, token });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-const login = async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validate email & password
-    if (!email || !password) {
-      return next(new Error('Please provide an email and password', 400));
-    }
-
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
-
-    if (!user) {
-      return next(new Error('Invalid credentials', 401));
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return next(new Error('Invalid credentials', 401));
-    }
-
-    // Create token
-    const token = user.getSignedJwtToken();
-
-    res.status(200).json({ success: true, token });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
-const getMe = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    res.status(200).json({ success: true, data: user });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc    Log user out / clear cookie
-// @route   GET /api/auth/logout
-// @access  Private
-const logout = async (req, res, next) => {
-  try {
-    res.cookie('token', 'none', {
-      expires: new Date(Date.now() + 10 * 1000),
-      httpOnly: true
-    });
-
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      data: {}
+      token,
+      user: userObj
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email already exists'
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Server error during registration'
+    });
   }
 };
+
+// ... (your existing login, getMe, and logout functions)
 
 module.exports = {
   register,

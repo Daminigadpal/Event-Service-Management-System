@@ -7,23 +7,25 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 import Register from './pages/Register';
-import authService from './api/auth';
+import { getMe, logout as apiLogout } from './api/auth';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check if we have a valid token
-        if (authService.isAuthenticated()) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const userData = await getMe();
+          setUser(userData);
           setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // Clear invalid token
-        authService.logout();
+        handleLogout();
       } finally {
         setIsLoading(false);
       }
@@ -32,19 +34,21 @@ function App() {
     checkAuth();
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = (userData) => {
+    setUser(userData);
     setIsAuthenticated(true);
   };
 
   const handleLogout = async () => {
     try {
-      await authService.logout();
+      await apiLogout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear auth state
+      localStorage.removeItem('token');
+      setUser(null);
       setIsAuthenticated(false);
-      // Ensure we clear the auth state even if the server call fails
-      authService.logout();
     }
   };
 
@@ -76,7 +80,7 @@ function App() {
     {
       path: '/register',
       element: !isAuthenticated ? (
-        <Register onRegister={handleLogin} />
+        <Register />
       ) : (
         <Navigate to="/dashboard" replace />
       ),
@@ -84,12 +88,11 @@ function App() {
     {
       path: '/dashboard/*',
       element: (
-        <PrivateRoute>
-          <Dashboard onLogout={handleLogout} />
+        <PrivateRoute isAuthenticated={isAuthenticated}>
+          <Dashboard user={user} onLogout={handleLogout} />
         </PrivateRoute>
       ),
     },
-    // Add a catch-all route for 404s
     {
       path: '*',
       element: <Navigate to="/" replace />
