@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 // Import routes from root routes directory
+// In your main index.js
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./src/routes/bookingRoutes');
 const customerRoutes = require('./src/routes/customerRoutes');
@@ -32,12 +33,19 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+app.use('/api/auth', authRoutes);
 
 // Enable CORS
+// In your index.js file, update the CORS configuration to:
 app.use(cors({
-  origin: 'http://localhost:3000',
-  credentials: true
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight requests
+app.options('*', cors());  // Enable preflight for all routes
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {

@@ -30,11 +30,14 @@ function Register({ onRegister }) {
     }
 
     try {
-      await authService.register(registerData);
+      // Create a new object without confirmPassword
+      const { confirmPassword, ...userData } = registerData;
+      await authService.register(userData);
       onRegister();
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
     }
   };
 

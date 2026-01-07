@@ -1,10 +1,8 @@
+// Create a new file at: src/utils/errorResponse.js
 class ErrorResponse extends Error {
   constructor(message, statusCode) {
     super(message);
     this.statusCode = statusCode;
-
-    // Maintains proper stack trace for where our error was thrown (only available in V8)
-    Error.captureStackTrace(this, this.constructor);
   }
 }
 

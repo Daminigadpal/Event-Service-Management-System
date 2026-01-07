@@ -1,14 +1,14 @@
 // frontend/src/components/PrivateRoute.jsx
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
+import authService from '../api/auth';
 
-const PrivateRoute = ({ isAuthenticated }) => {
-  const location = useLocation();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+const PrivateRoute = ({ children }) => {
+  if (!authService.isAuthenticated()) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return children;
 };
 
 export default PrivateRoute;

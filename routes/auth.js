@@ -3,23 +3,17 @@ const router = express.Router();
 const { 
   register, 
   login, 
-  getMe,
-  logout,
-  updateDetails,
-  updatePassword
-} = require('./../src/controllers/authController');
-const { protect } = require('./../src/middleware/auth');
+  getMe, 
+  logout
+} = require('../controllers/authController');
+const { protect } = require('../src/middleware/auth');
 
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
 
-// Protected routes
-router.use(protect);
-
-router.get('/me', getMe);
-router.get('/logout', logout);
-router.put('/updatedetails', updateDetails);
-router.put('/updatepassword', updatePassword);
+// Protected routes - these require a valid JWT token
+router.get('/me', protect, getMe);
+router.get('/logout', protect, logout);
 
 module.exports = router;

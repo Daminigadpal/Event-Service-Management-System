@@ -14,25 +14,46 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = authService.getToken();
-    if (token) {
-      authService.setAuthToken(token);
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      try {
+        // Check if we have a valid token
+        if (authService.isAuthenticated()) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        // Clear invalid token
+        authService.logout();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+      // Ensure we clear the auth state even if the server call fails
+      authService.logout();
+    }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
   }
 
   const router = createBrowserRouter([
@@ -61,19 +82,33 @@ function App() {
       ),
     },
     {
-      element: <PrivateRoute isAuthenticated={isAuthenticated} />,
-      children: [
-        {
-          path: '/dashboard/*',
-          element: <Dashboard onLogout={handleLogout} />,
-        },
-      ],
+      path: '/dashboard/*',
+      element: (
+        <PrivateRoute>
+          <Dashboard onLogout={handleLogout} />
+        </PrivateRoute>
+      ),
     },
+    // Add a catch-all route for 404s
+    {
+      path: '*',
+      element: <Navigate to="/" replace />
+    }
   ]);
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={5000} />
+      <ToastContainer 
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <RouterProvider router={router} />
     </>
   );
