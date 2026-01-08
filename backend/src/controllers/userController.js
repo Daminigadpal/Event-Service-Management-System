@@ -1,94 +1,58 @@
-import ErrorResponse from '../utils/errorResponse.js';
+// backend/src/controllers/userController.js
 import User from '../models/User.js';
+import ErrorResponse from '../utils/errorResponse.js';
 
-// @desc    Get all users
-// @route   GET /api/v1/users
-// @access  Private/Admin
-// @desc    Get all users
-// @route   GET /api/v1/users
-// @access  Private/Admin
-export const getUsers = async (req, res, next) => {
-  try {
-    res.status(200).json(res.advancedResults);
-  } catch (err) {
-    next(err);
-  }
+// Add asyncHandler directly in this file
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// @desc    Get single user
-// @route   GET /api/v1/users/:id
-// @access  Private/Admin
-// @desc    Get single user
-// @route   GET /api/v1/users/:id
-// @access  Private/Admin
-export const getUser = async (req, res, next) => {
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+export const updateProfile = asyncHandler(async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    console.log('Updating profile for user:', req.user.id);
+    console.log('Request body:', req.body);
+
+    const { name, email, phone, address } = req.body;
+    const updateObj = {};
+    if (name !== undefined) updateObj.name = name;
+    if (email !== undefined) updateObj.email = email;
+    if (phone !== undefined) updateObj.phone = phone;
+    if (address !== undefined) updateObj.address = address;
+
+    console.log('Update object:', updateObj);
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateObj },
+      { new: true, runValidators: true }
+    ).select('-password');
+
     if (!user) {
-      return next(
-        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
-      );
+      console.log('User not found with id:', req.user.id);
+      return next(new ErrorResponse('User not found', 404));
     }
+
+    console.log('Successfully updated user:', user);
     res.status(200).json({ success: true, data: user });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc    Create user
-// @route   POST /api/v1/users
-// @access  Private/Admin
-// @desc    Create user
-// @route   POST /api/v1/users
-// @access  Private/Admin
-export const createUser = async (req, res, next) => {
-  try {
-    const user = await User.create(req.body);
-    res.status(201).json({ success: true, data: user });
-  } catch (err) {
-    next(err);
-  }
-};
-
-// @desc    Update user
-// @route   PUT /api/v1/users/:id
-// @access  Private/Admin
-// @desc    Update user
-// @route   PUT /api/v1/users/:id
-// @access  Private/Admin
-export const updateUser = async (req, res, next) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-    if (!user) {
-      return next(
-        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
-      );
+  } catch (error) {
+    console.error('Error in updateProfile:', error);
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return next(new ErrorResponse(messages, 400));
     }
-    res.status(200).json({ success: true, data: user });
-  } catch (err) {
-    next(err);
+    return next(new ErrorResponse(error.message || 'Server error', 500));
   }
-};
+});
 
-// @desc    Delete user
-// @route   DELETE /api/v1/users/:id
-// @access  Private/Admin
-// @desc    Delete user
-// @route   DELETE /api/v1/users/:id
-// @access  Private/Admin
-export const deleteUser = async (req, res, next) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return next(
-        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
-      );
-    }
-    res.status(200).json({ success: true, data: {} });
-  } catch (err) {
-    next(err);
+// Add other user controller methods here, each using the same asyncHandler
+// For example:
+export const getUserProfile = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select('-password');
+  if (!user) {
+    return next(new ErrorResponse('User not found', 404));
   }
-};
+  res.status(200).json({ success: true, data: user });
+});

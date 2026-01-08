@@ -1,27 +1,47 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+// backend/src/models/User.js
+import mongoose from 'mongoose';
 
-const userSchema = new mongoose.Schema({
-  firstname: { type: String, required: true },
-  lastname: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ["admin","staff","customer"], default: "customer" }
+const UserSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Please add a name'],
+    trim: true
+  },
+  email: {
+    type: String,
+    required: [true, 'Please add an email'],
+    unique: true,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      'Please add a valid email'
+    ]
+  },
+  phone: {
+    type: String,
+    maxlength: [20, 'Phone number can not be longer than 20 characters'],
+    default: ''
+  },
+  address: {
+    type: String,
+    default: ''
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  password: {
+    type: String,
+    required: [true, 'Please add a password'],
+    minlength: 6,
+    select: false
+  },
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-// Hash password before save
-userSchema.pre("save", async function(next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Compare password
-userSchema.methods.matchPassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
-};
-
-const User = mongoose.model("User", userSchema);
-
-export default User;
+export default mongoose.model('User', UserSchema);

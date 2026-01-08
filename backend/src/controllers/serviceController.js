@@ -1,76 +1,60 @@
-// src/controllers/serviceController.js
+// backend/src/controllers/serviceController.js
 import Service from '../models/Service.js';
+import ErrorResponse from '../utils/errorResponse.js';
 
-const serviceController = {
-  // @desc    Create a service
-  // @route   POST /api/services
-  createService: async (req, res, next) => {
-    try {
-      const service = new Service(req.body);
-      await service.save();
-      res.status(201).json(service);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Get all services
-  // @route   GET /api/services
-  getServices: async (req, res, next) => {
-    try {
-      const services = await Service.find();
-      res.json(services);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Get single service
-  // @route   GET /api/services/:id
-  getService: async (req, res, next) => {
-    try {
-      const service = await Service.findById(req.params.id);
-      if (!service) {
-        return res.status(404).json({ msg: 'Service not found' });
-      }
-      res.json(service);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Update service
-  // @route   PUT /api/services/:id
-  updateService: async (req, res, next) => {
-    try {
-      const service = await Service.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true, runValidators: true }
-      );
-      if (!service) {
-        return res.status(404).json({ msg: 'Service not found' });
-      }
-      res.json(service);
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  // @desc    Delete service
-  // @route   DELETE /api/services/:id
-  deleteService: async (req, res, next) => {
-    try {
-      const service = await Service.findById(req.params.id);
-      if (!service) {
-        return res.status(404).json({ msg: 'Service not found' });
-      }
-      await service.remove();
-      res.json({ msg: 'Service removed' });
-    } catch (err) {
-      next(err);
-    }
+// @desc    Get all services
+// @route   GET /api/v1/services
+// @access  Public
+export const getServices = async (req, res, next) => {
+  try {
+    const services = await Service.find();
+    res.status(200).json({ success: true, count: services.length, data: services });
+  } catch (err) {
+    next(err);
   }
 };
 
-export default serviceController;
+// @desc    Create service
+// @route   POST /api/v1/services
+// @access  Private/Admin
+export const createService = async (req, res, next) => {
+  try {
+    const service = await Service.create(req.body);
+    res.status(201).json({ success: true, data: service });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Update service
+// @route   PUT /api/v1/services/:id
+// @access  Private/Admin
+export const updateService = async (req, res, next) => {
+  try {
+    const service = await Service.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+    if (!service) {
+      return next(new ErrorResponse(`Service not found with id of ${req.params.id}`, 404));
+    }
+    res.status(200).json({ success: true, data: service });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Delete service
+// @route   DELETE /api/v1/services/:id
+// @access  Private/Admin
+export const deleteService = async (req, res, next) => {
+  try {
+    const service = await Service.findByIdAndDelete(req.params.id);
+    if (!service) {
+      return next(new ErrorResponse(`Service not found with id of ${req.params.id}`, 404));
+    }
+    res.status(200).json({ success: true, data: {} });
+  } catch (err) {
+    next(err);
+  }
+};

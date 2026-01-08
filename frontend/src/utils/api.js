@@ -2,14 +2,13 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // Note: Removed /v1 from here
+  baseURL: 'http://localhost:5000/api/v1', // Make sure this is correct
   headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true // Important for sending cookies
+    'Content-Type': 'application/json'
+  }
 });
 
-// Add a request interceptor to include the auth token in requests
+// Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -19,19 +18,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Add a response interceptor to handle 401 Unauthorized
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
     return Promise.reject(error);
   }
 );
