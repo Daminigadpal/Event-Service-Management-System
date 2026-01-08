@@ -1,71 +1,42 @@
-import React, { useState } from 'react';
-import { Container, Form, Button, Spinner } from 'react-bootstrap';
-import { useAuth } from '../contexts/useAuth';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      await login(email, password);
-      // Navigation is handled in the login function
-    } catch (error) {
-      console.error('Login error:', error);
-    }
+
+    // Fake token for testing
+    let role = "customer"; // default
+    if (form.email === "admin@example.com") role = "admin";
+    else if (form.email === "staff@example.com") role = "staff";
+
+    const fakeToken = btoa(JSON.stringify({ id: "123", role }));
+    login(fakeToken);
+
+    if (role === "admin") navigate("/admin/dashboard");
+    else if (role === "staff") navigate("/staff/dashboard");
+    else navigate("/customer/dashboard");
   };
 
   return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-      <div className="w-100" style={{ maxWidth: '400px' }}>
-        <h2 className="text-center mb-4">Login</h2>
-        <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3" controlId="formBasicEmail">
-            <Form.Label>Email address</Form.Label>
-            <Form.Control
-              type="email"
-              placeholder="Enter email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="formBasicPassword">
-            <Form.Label>Password</Form.Label>
-            <Form.Control
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
-          </Form.Group>
-
-          <Button variant="primary" type="submit" disabled={loading} className="w-100">
-            {loading ? (
-              <>
-                <Spinner
-                  as="span"
-                  animation="border"
-                  size="sm"
-                  role="status"
-                  aria-hidden="true"
-                  className="me-2"
-                />
-                Logging in...
-              </>
-            ) : (
-              'Login'
-            )}
-          </Button>
-        </Form>
-      </div>
-    </Container>
+    <div>
+      <h2>Login</h2>
+      <form onSubmit={handleSubmit}>
+        <input name="email" placeholder="Email" value={form.email} onChange={handleChange} />
+        <input type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} />
+        <button type="submit">Login</button>
+      </form>
+      <p>
+        Don't have an account? <Link to="/register">Register here</Link>
+      </p>
+    </div>
   );
 };
 

@@ -1,97 +1,31 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { register } from '../api/auth';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [error, setError] = useState('');
+  const [form, setForm] = useState({ firstname: "", lastname: "", email: "", password: "" });
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    try {
-      setError('');
-      const response = await register({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
-      });
-      console.log('Registration successful:', response);
-      navigate('/login'); // Redirect to login page after successful registration
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError(error.message || 'Registration failed. Please try again.');
-    }
+    alert("Registered successfully! Please login.");
+    navigate("/login");
   };
 
   return (
-    <div className="register-container">
-      <h2>Create Account</h2>
-      {error && <div className="error-message">{error}</div>}
+    <div>
+      <h2>Register</h2>
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" className="btn btn-primary">
-          Register
-        </button>
+        <input name="firstname" placeholder="First Name" value={form.firstname} onChange={handleChange} />
+        <input name="lastname" placeholder="Last Name" value={form.lastname} onChange={handleChange} />
+        <input name="email" placeholder="Email" value={form.email} onChange={handleChange} />
+        <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} />
+        <button type="submit">Register</button>
       </form>
+      <p>
+        Already have an account? <Link to="/login">Login here</Link>
+      </p>
     </div>
   );
 };

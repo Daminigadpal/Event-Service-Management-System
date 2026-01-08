@@ -1,24 +1,12 @@
-// frontend/src/pages/customer/UserDashboard.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/useAuth';
+import React from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const UserDashboard = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth(); // Get user and logout from useAuth
-
-  console.log('UserDashboard - User from context:', user);
-
-  if (!user) {
-    console.log('No user, redirecting to login...');
-    navigate('/login');
-    return <div>Redirecting to login...</div>;
-  }
-
+  const { user, logout } = useAuth();
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f0f0f0' }}>
-      <h1>Welcome, {user?.name || 'User'}</h1>
-      <p>Dashboard is working!</p>
+    <div>
+      <h2>User Dashboard</h2>
+      <p>Welcome, your role is: {user.role}</p>
       <button onClick={logout}>Logout</button>
     </div>
   );

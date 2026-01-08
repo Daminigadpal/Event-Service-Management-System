@@ -1,7 +1,7 @@
 // src/routes/serviceRoutes.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const serviceController = require('../controllers/serviceController');
+import * as serviceController from '../controllers/serviceController.js';
 
 // Test route (public)
 router.get('/test', (req, res) => {
@@ -15,4 +15,4 @@ router.get('/:id', serviceController.getService);
 router.put('/:id', serviceController.updateService);
 router.delete('/:id', serviceController.deleteService);
 
-module.exports = router;
+export default router;

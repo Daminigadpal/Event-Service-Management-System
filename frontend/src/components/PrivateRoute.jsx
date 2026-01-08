@@ -1,15 +1,15 @@
-// frontend/src/components/PrivateRoute.jsx
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/useAuth';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+const PrivateRoute = ({ children, role }) => {
+  const { user } = useAuth();
 
-  if (loading) {
-    return <div>Loading...</div>; // Or a loading spinner
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
-  return user ? children : <Navigate to="/login" replace />;
+  if (role && user.role !== role) return <Navigate to="/login" replace />;
+
+  return children;
 };
 
 export default PrivateRoute;

@@ -1,12 +1,12 @@
-const express = require('express');
-const { protect } = require('../middleware/auth');
-const {
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import {
   getBookings,
   getBooking,
   createBooking,
   updateBooking,
   deleteBooking
-} = require('../controllers/bookingController');
+} from '../controllers/bookingController.js';
 
 const router = express.Router();
 
@@ -24,4 +24,4 @@ router
   .put(updateBooking)
   .delete(deleteBooking);
 
-module.exports = router;
+export default router;
