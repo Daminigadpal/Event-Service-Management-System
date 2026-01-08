@@ -1,18 +1,18 @@
 // frontend/src/api/auth.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5002/api'; // Backend server port
+const API_URL = 'http://localhost:5000/api'; // Matches the backend route configuration
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true // Important for cookies
 });
 
-// Request interceptor to add auth token
+// Add request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,10 +21,12 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
-// Response interceptor for error handling
+// Add response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -37,57 +39,47 @@ api.interceptors.response.use(
   }
 );
 
-// Check if user is authenticated
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
-};
-
-// Register user
+// Auth functions
 export const register = async (userData) => {
   try {
     const response = await api.post('/auth/register', userData);
     return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message;
-    console.error('Registration failed:', errorMessage);
-    throw new Error(errorMessage || 'Registration failed. Please try again.');
+    throw error.response?.data || error.message;
   }
 };
 
-// Login user
 export const login = async (credentials) => {
   try {
     const response = await api.post('/auth/login', credentials);
-    const { token, user } = response.data;
-    if (token) {
-      localStorage.setItem('token', token);
+    // Store the token in localStorage
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
     }
-    return user;
+    return response.data;
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message;
-    console.error('Login failed:', errorMessage);
-    throw new Error(errorMessage || 'Login failed. Please check your credentials.');
+    throw error.response?.data || error.message;
   }
 };
 
-// Get current user
 export const getMe = async () => {
   try {
     const response = await api.get('/auth/me');
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch user:', error);
-    throw error;
+    throw error.response?.data || error.message;
   }
 };
 
-// Logout user
 export const logout = async () => {
   try {
-    await api.post('/auth/logout');
-  } catch (error) {
-    console.error('Logout failed:', error);
-  } finally {
+    // Clear the token from localStorage
     localStorage.removeItem('token');
+    // Optionally call backend logout if you have an endpoint for it
+    // await api.post('/auth/logout');
+  } catch (error) {
+    console.error('Logout error:', error);
   }
 };
+
+export default api;

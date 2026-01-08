@@ -1,6 +1,5 @@
-// frontend/src/pages/Register.jsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { register } from '../api/auth';
 
 const Register = () => {
@@ -11,7 +10,6 @@ const Register = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -22,72 +20,78 @@ const Register = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await register({ name, email, password });
-    console.log('Registration successful:', response.data);
-    // Redirect or show success message
-  } catch (error) {
-    console.error('Registration error:', error.response?.data || error.message);
-  }
-};
+    e.preventDefault();
+    
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      setError('');
+      const response = await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+      console.log('Registration successful:', response);
+      navigate('/login'); // Redirect to login page after successful registration
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
+    }
+  };
 
   return (
     <div className="register-container">
       <h2>Create Account</h2>
       {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name:</label>
+        <div className="form-group">
+          <label>Name</label>
           <input
             type="text"
             name="name"
             value={formData.name}
             onChange={handleChange}
             required
-            disabled={isLoading}
           />
         </div>
-        <div>
-          <label>Email:</label>
+        <div className="form-group">
+          <label>Email</label>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            disabled={isLoading}
           />
         </div>
-        <div>
-          <label>Password:</label>
+        <div className="form-group">
+          <label>Password</label>
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            disabled={isLoading}
           />
         </div>
-        <div>
-          <label>Confirm Password:</label>
+        <div className="form-group">
+          <label>Confirm Password</label>
           <input
             type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            disabled={isLoading}
           />
         </div>
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Registering...' : 'Register'}
+        <button type="submit" className="btn btn-primary">
+          Register
         </button>
       </form>
-      <div className="login-link">
-        Already have an account? <Link to="/login">Login</Link>
-      </div>
     </div>
   );
 };

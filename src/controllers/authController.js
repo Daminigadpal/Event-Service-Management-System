@@ -1,7 +1,5 @@
-// controllers/authController.js
-const User = require('../models/User');
-const ErrorResponse = require('../utils/errorResponse');
-const asyncHandler = require('../middleware/async');
+import User from '../models/User.js';
+import ErrorResponse from '../utils/errorResponse.js';
 
 // Helper function to send token response
 const sendTokenResponse = (user, statusCode, res) => {
@@ -16,70 +14,34 @@ const sendTokenResponse = (user, statusCode, res) => {
     secure: process.env.NODE_ENV === 'production'
   };
 
-  res
-    .status(statusCode)
-    .cookie('token', token, options)
-    .json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
+  res.status(statusCode).cookie('token', token, options).json({
+    success: true,
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
+  });
 };
 
 // @desc    Register user
 const register = async (req, res, next) => {
   try {
-    console.log('Registration request body:', req.body);
-    const { name, email, password, role = 'user' } = req.body;
-
-    // Basic validation
-    if (!name || !email || !password) {
-      console.log('Validation failed - Missing required fields');
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide name, email, and password'
-      });
-    }
-
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('User already exists:', email);
-      return res.status(400).json({
-        success: false,
-        error: 'User already exists with this email'
-      });
-    }
+    const { name, email, password, role } = req.body;
 
     // Create user
     const user = await User.create({
       name,
       email,
       password,
-      role: role || 'user' // Default to 'user' if role not provided
+      role: role || 'user'  // Default role to 'user' if not provided
     });
 
-    console.log('User created successfully:', user.email);
-    sendTokenResponse(user, 201, res);
+    sendTokenResponse(user, 200, res);
   } catch (error) {
-    console.error('Registration error:', error);
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map(val => val.message);
-      return res.status(400).json({
-        success: false,
-        error: messages.join(', ')
-      });
-    }
-    res.status(500).json({
-      success: false,
-      error: 'Server error during registration',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    next(error);
   }
 };
 
@@ -123,7 +85,7 @@ const getMe = async (req, res, next) => {
   }
 };
 
-// @desc    Log user out
+// @desc    Log user out / clear cookie
 const logout = async (req, res, next) => {
   try {
     res.cookie('token', 'none', {
@@ -140,9 +102,11 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  register: asyncHandler(register),
-  login: asyncHandler(login),
-  getMe: asyncHandler(getMe),
-  logout: asyncHandler(logout)
+// Export all functions
+export {
+  register,
+  login,
+  getMe,
+  logout,
+  sendTokenResponse
 };

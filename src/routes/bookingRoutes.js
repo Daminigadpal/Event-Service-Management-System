@@ -1,19 +1,27 @@
-// src/routes/bookingRoutes.js
 const express = require('express');
+const { protect } = require('../middleware/auth');
+const {
+  getBookings,
+  getBooking,
+  createBooking,
+  updateBooking,
+  deleteBooking
+} = require('../controllers/bookingController');
+
 const router = express.Router();
-const bookingController = require('../controllers/bookingController');
-const advancedResults = require('../../middleware/advancedResults');
 
-// Test route (public)
-router.get('/test', (req, res) => {
-  res.json({ message: 'Booking routes are working!' });
-});
+// All routes below are protected and require authentication
+router.use(protect);
 
-// Booking routes
-router.post('/', bookingController.createBooking);
-router.get('/', bookingController.getBookings);
-router.get('/:id', bookingController.getBooking);
-router.put('/:id', bookingController.updateBooking);
-router.delete('/:id', bookingController.deleteBooking);
+router
+  .route('/')
+  .get(getBookings)
+  .post(createBooking);
+
+router
+  .route('/:id')
+  .get(getBooking)
+  .put(updateBooking)
+  .delete(deleteBooking);
 
 module.exports = router;

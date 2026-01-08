@@ -1,19 +1,20 @@
-const express = require('express');
-const router = express.Router();
-const { 
-  register,  // This is the correct import name
+import express from 'express';
+import { protect } from '../src/middleware/auth.js';
+import { 
+  register, 
   login, 
   getMe, 
   logout 
-} = require('../src/controllers/authController');
-const { protect } = require('../src/middleware/auth');
+} from '../src/controllers/authController.js';
+
+const router = express.Router();
 
 // Public routes
-router.post('/register', register);  // Changed from registerUser to register
+router.post('/register', register);
 router.post('/login', login);
 
 // Protected routes
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 
-module.exports = router;
+export default router;

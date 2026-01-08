@@ -1,70 +1,78 @@
-
-// src/controllers/userController.js
+const ErrorResponse = require('../utils/errorResponse');
 const User = require('../models/User');
 
 // @desc    Get all users
-// @route   GET /api/users
+// @route   GET /api/v1/users
 // @access  Private/Admin
 exports.getUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-password');
-    res.json(users);
+    res.status(200).json(res.advancedResults);
   } catch (err) {
     next(err);
   }
 };
 
 // @desc    Get single user
-// @route   GET /api/users/:id
+// @route   GET /api/v1/users/:id
 // @access  Private/Admin
 exports.getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
+      return next(
+        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
+      );
     }
-    res.json(user);
+    res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Create user
+// @route   POST /api/v1/users
+// @access  Private/Admin
+exports.createUser = async (req, res, next) => {
+  try {
+    const user = await User.create(req.body);
+    res.status(201).json({ success: true, data: user });
   } catch (err) {
     next(err);
   }
 };
 
 // @desc    Update user
-// @route   PUT /api/users/:id
+// @route   PUT /api/v1/users/:id
 // @access  Private/Admin
 exports.updateUser = async (req, res, next) => {
   try {
-    const { name, email, role } = req.body;
-    let user = await User.findById(req.params.id);
-    
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
     if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
+      return next(
+        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
+      );
     }
-
-    user.name = name || user.name;
-    user.email = email || user.email;
-    if (role) user.role = role;
-
-    await user.save();
-    res.json(user);
+    res.status(200).json({ success: true, data: user });
   } catch (err) {
     next(err);
   }
 };
 
 // @desc    Delete user
-// @route   DELETE /api/users/:id
+// @route   DELETE /api/v1/users/:id
 // @access  Private/Admin
 exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
-    
+    const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
+      return next(
+        new ErrorResponse(`User not found with id of ${req.params.id}`, 404)
+      );
     }
-
-    await user.remove();
-    res.json({ msg: 'User removed' });
+    res.status(200).json({ success: true, data: {} });
   } catch (err) {
     next(err);
   }

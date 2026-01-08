@@ -1,30 +1,11 @@
-const express = require('express');
-const router = express.Router({ mergeParams: true });
-const { 
-  getBookings, 
-  createBooking, 
-  getBooking, 
-  updateBooking, 
-  deleteBooking 
-} = require('../src/controllers/bookingController');
-const { protect, authorize } = require('../src/middleware/auth');
-const advancedResults = require('../../middleware/advancedResults');
-const Booking = require('../src/models/Booking');
+// routes/bookings.js
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import { getMyBookings } from '../controllers/bookings.js';
 
-router.route('/')
-  .get(
-    protect,
-    advancedResults(Booking, [
-      { path: 'service', select: 'name price' },
-      { path: 'user', select: 'name email' }
-    ]),
-    getBookings
-  )
-  .post(protect, authorize('user', 'admin'), createBooking);
+const router = express.Router();
 
-router.route('/:id')
-  .get(protect, getBooking)
-  .put(protect, authorize('user', 'admin'), updateBooking)
-  .delete(protect, authorize('user', 'admin'), deleteBooking);
+// Protected route (requires authentication)
+router.get('/me', protect, getMyBookings);
 
-module.exports = router;
+export default router;

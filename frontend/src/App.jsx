@@ -1,119 +1,115 @@
 // frontend/src/App.jsx
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
-import Register from './pages/Register';
-import { getMe, logout as apiLogout } from './api/auth';
+import ErrorBoundary from './components/ErrorBoundary';
+import Loading from './components/Loading';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import auth from './api/auth';  // Make sure this import exists
+
+// Lazy load components
+const Login = lazy(() => import('./pages/Login').then(module => ({ default: module.default })));
+const Register = lazy(() => import('./pages/Register').then(module => ({ default: module.default })));
+const UserDashboard = lazy(() => import('./pages/customer/UserDashboard').then(module => ({ default: module.default })));
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  // Add authentication check on component mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const userData = await getMe();
-          setUser(userData);
+          const userData = await auth.getMe();
+          setUser(userData.data);
           setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        handleLogout();
+        localStorage.removeItem('token');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     checkAuth();
   }, []);
 
+  // Add handleLogin function
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
+    localStorage.setItem('token', userData.token);
   };
 
+  // Add handleLogout function
   const handleLogout = async () => {
     try {
-      await apiLogout();
+      await auth.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear auth state
       localStorage.removeItem('token');
       setUser(null);
       setIsAuthenticated(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
+  if (loading) {
+    return <Loading />;
   }
 
-  const router = createBrowserRouter([
-    {
-      path: '/',
-      element: isAuthenticated ? (
-        <Navigate to="/dashboard" replace />
-      ) : (
-        <Navigate to="/login" replace />
-      ),
-    },
-    {
-      path: '/login',
-      element: !isAuthenticated ? (
-        <Login onLogin={handleLogin} />
-      ) : (
-        <Navigate to="/dashboard" replace />
-      ),
-    },
-    {
-      path: '/register',
-      element: !isAuthenticated ? (
-        <Register />
-      ) : (
-        <Navigate to="/dashboard" replace />
-      ),
-    },
-    {
-      path: '/dashboard/*',
-      element: (
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <Dashboard user={user} onLogout={handleLogout} />
-        </PrivateRoute>
-      ),
-    },
-    {
-      path: '*',
-      element: <Navigate to="/" replace />
-    }
-  ]);
-
   return (
-    <>
-      <ToastContainer 
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-      <RouterProvider router={router} />
-    </>
+    <ErrorBoundary>
+      <Router>
+        <div className="App">
+          <ToastContainer 
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  !isAuthenticated ? (
+                    <Login onLogin={handleLogin} />
+                  ) : (
+                    <Navigate to="/customer/dashboard" replace />
+                  )
+                }
+              />
+              <Route
+                path="/customer/dashboard"
+                element={
+                  <PrivateRoute isAuthenticated={isAuthenticated}>
+                    <UserDashboard user={user} onLogout={handleLogout} />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <Navigate to={isAuthenticated ? '/customer/dashboard' : '/login'} replace />
+                }
+              />
+            </Routes>
+          </Suspense>
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
