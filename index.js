@@ -21,6 +21,7 @@ const app = express();
 const corsOptions = {
   origin: ['http://localhost:5175', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   optionsSuccessStatus: 200
 };
 
@@ -29,6 +30,11 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
+
+app.use(express.json());
+app.use(cookieParser());
+// ... your routes
+app.use('/api/auth', authRoutes);
 
 // Add manual CORS headers
 app.use((req, res, next) => {
