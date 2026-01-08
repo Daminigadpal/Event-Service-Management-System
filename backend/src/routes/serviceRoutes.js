@@ -1,7 +1,7 @@
 // src/routes/serviceRoutes.js
 import express from 'express';
 const router = express.Router();
-import * as serviceController from '../controllers/serviceController.js';
+import serviceController from '../controllers/serviceController.js';
 
 // Test route (public)
 router.get('/test', (req, res) => {

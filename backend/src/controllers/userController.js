@@ -1,10 +1,13 @@
-const ErrorResponse = require('../utils/errorResponse');
-const User = require('../models/User');
+import ErrorResponse from '../utils/errorResponse.js';
+import User from '../models/User.js';
 
 // @desc    Get all users
 // @route   GET /api/v1/users
 // @access  Private/Admin
-exports.getUsers = async (req, res, next) => {
+// @desc    Get all users
+// @route   GET /api/v1/users
+// @access  Private/Admin
+export const getUsers = async (req, res, next) => {
   try {
     res.status(200).json(res.advancedResults);
   } catch (err) {
@@ -15,7 +18,10 @@ exports.getUsers = async (req, res, next) => {
 // @desc    Get single user
 // @route   GET /api/v1/users/:id
 // @access  Private/Admin
-exports.getUser = async (req, res, next) => {
+// @desc    Get single user
+// @route   GET /api/v1/users/:id
+// @access  Private/Admin
+export const getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -32,7 +38,10 @@ exports.getUser = async (req, res, next) => {
 // @desc    Create user
 // @route   POST /api/v1/users
 // @access  Private/Admin
-exports.createUser = async (req, res, next) => {
+// @desc    Create user
+// @route   POST /api/v1/users
+// @access  Private/Admin
+export const createUser = async (req, res, next) => {
   try {
     const user = await User.create(req.body);
     res.status(201).json({ success: true, data: user });
@@ -44,7 +53,10 @@ exports.createUser = async (req, res, next) => {
 // @desc    Update user
 // @route   PUT /api/v1/users/:id
 // @access  Private/Admin
-exports.updateUser = async (req, res, next) => {
+// @desc    Update user
+// @route   PUT /api/v1/users/:id
+// @access  Private/Admin
+export const updateUser = async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -64,7 +76,10 @@ exports.updateUser = async (req, res, next) => {
 // @desc    Delete user
 // @route   DELETE /api/v1/users/:id
 // @access  Private/Admin
-exports.deleteUser = async (req, res, next) => {
+// @desc    Delete user
+// @route   DELETE /api/v1/users/:id
+// @access  Private/Admin
+export const deleteUser = async (req, res, next) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {

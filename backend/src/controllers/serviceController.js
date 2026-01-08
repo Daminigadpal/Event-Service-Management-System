@@ -1,5 +1,5 @@
 // src/controllers/serviceController.js
-const Service = require('../models/Service');
+import Service from '../models/Service.js';
 
 const serviceController = {
   // @desc    Create a service
@@ -73,4 +73,4 @@ const serviceController = {
   }
 };
 
-module.exports = serviceController;
+export default serviceController;

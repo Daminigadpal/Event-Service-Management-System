@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
   customer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -9,4 +9,6 @@ const bookingSchema = new mongoose.Schema({
   paymentStatus: { type: String, enum: ["pending","partial","paid"], default: "pending" }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Booking", bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
+
+export default Booking;

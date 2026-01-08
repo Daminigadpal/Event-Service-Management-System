@@ -1,10 +1,13 @@
-const ErrorResponse = require('../utils/errorResponse');
-const Booking = require('../models/Booking');
+import ErrorResponse from '../utils/errorResponse.js';
+import Booking from '../models/Booking.js';
 
 // @desc    Get all bookings
 // @route   GET /api/v1/bookings
 // @access  Private
-exports.getBookings = async (req, res, next) => {
+// @desc    Get all bookings
+// @route   GET /api/v1/bookings
+// @access  Private
+export const getBookings = async (req, res, next) => {
   try {
     res.status(200).json(res.advancedResults);
   } catch (err) {
@@ -15,7 +18,10 @@ exports.getBookings = async (req, res, next) => {
 // @desc    Get single booking
 // @route   GET /api/v1/bookings/:id
 // @access  Private
-exports.getBooking = async (req, res, next) => {
+// @desc    Get single booking
+// @route   GET /api/v1/bookings/:id
+// @access  Private
+export const getBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('user', 'name email');
     
@@ -44,7 +50,10 @@ exports.getBooking = async (req, res, next) => {
 // @desc    Create booking
 // @route   POST /api/v1/bookings
 // @access  Private
-exports.createBooking = async (req, res, next) => {
+// @desc    Create booking
+// @route   POST /api/v1/bookings
+// @access  Private
+export const createBooking = async (req, res, next) => {
   try {
     // Add user to req.body
     req.body.user = req.user.id;
@@ -59,7 +68,10 @@ exports.createBooking = async (req, res, next) => {
 // @desc    Update booking
 // @route   PUT /api/v1/bookings/:id
 // @access  Private
-exports.updateBooking = async (req, res, next) => {
+// @desc    Update booking
+// @route   PUT /api/v1/bookings/:id
+// @access  Private
+export const updateBooking = async (req, res, next) => {
   try {
     let booking = await Booking.findById(req.params.id);
 
@@ -93,7 +105,10 @@ exports.updateBooking = async (req, res, next) => {
 // @desc    Delete booking
 // @route   DELETE /api/v1/bookings/:id
 // @access  Private
-exports.deleteBooking = async (req, res, next) => {
+// @desc    Delete booking
+// @route   DELETE /api/v1/bookings/:id
+// @access  Private
+export const deleteBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id);
 
