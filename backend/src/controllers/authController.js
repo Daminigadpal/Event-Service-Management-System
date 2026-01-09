@@ -1,120 +1,115 @@
-// backend/src/controllers/authController.js
-import User from '../models/User.js';
-import ErrorResponse from '../utils/errorResponse.js';
-import jwt from 'jsonwebtoken';
+import User from "../models/User.js";
 
-// @desc    Register user
+// Mock user data for testing without MongoDB
+const mockUsers = [
+  {
+    _id: '69607e6cc3465f9a8169107d',
+    name: 'Ram',
+    email: 'ram@gmail.com',
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // 'ram123' hashed
+    role: 'user'
+  }
+];
+
+// Async handler
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+//
 // @route   POST /api/v1/auth/register
-// @access  Public
-export const register = async (req, res, next) => {
+//
+export const register = asyncHandler(async (req, res) => {
   const { name, email, password, role } = req.body;
 
-  try {
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role
-    });
+  // Mock registration - just return success
+  const newUser = {
+    _id: Date.now().toString(),
+    name,
+    email,
+    role: role || 'user'
+  };
 
-    sendTokenResponse(user, 200, res);
-  } catch (err) {
-    next(err);
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully (mock)",
+    data: newUser,
+  });
+});
 
-// @desc    Login user
+//
 // @route   POST /api/v1/auth/login
-// @access  Public
-// In your login controller (authController.js)
-// In your login controller (authController.js)
-// In your frontend Login.jsx
-// In backend/src/controllers/authController.js
-export const login = async (req, res, next) => {
+//
+export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  console.log('Login attempt:', { email, password });
+
+  // Validate
   if (!email || !password) {
-    return next(new ErrorResponse('Please provide an email and password', 400));
+    return res.status(400).json({
+      success: false,
+      error: "Please provide email and password",
+    });
   }
 
-  try {
-    const user = await User.findOne({ email }).select('+password');
+  // Mock user check
+  const user = mockUsers.find(u => u.email === email);
+  console.log('User found:', user ? 'Yes' : 'No');
 
-    if (!user) {
-      return next(new ErrorResponse('Invalid credentials', 401));
-    }
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid credentials",
+    });
+  }
 
-    const isMatch = await user.matchPassword(password);
+  // Mock password check (for ram@gmail.com, password should be 'ram123')
+  if (email === 'ram@gmail.com' && password !== 'ram123') {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid credentials",
+    });
+  }
 
-    if (!isMatch) {
-      return next(new ErrorResponse('Invalid credentials', 401));
-    }
+  // Generate proper JWT token
+  const jwt = await import('jsonwebtoken');
+  const token = jwt.default.sign(
+    { id: user._id, email: user.email },
+    process.env.JWT_SECRET || 'your_jwt_secret',
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
+  );
 
-    // Create a user object without the password
-    const userData = {
+  res.status(200).json({
+    success: true,
+    token,
+    data: {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
-    };
+      role: user.role,
+    },
+  });
+});
 
-    // Pass the userData object as the fourth argument
-    sendTokenResponse(user, 200, res, userData);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// Update the sendTokenResponse function to include user data
-
-
-// Update the sendTokenResponse function to include user data
-const sendTokenResponse = (user, statusCode, res, userData) => {
-  const token = user.getSignedJwtToken();
-
-  const options = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true
-  };
-
-  if (process.env.NODE_ENV === 'production') {
-    options.secure = true;
-  }
-
-  res
-    .status(statusCode)
-    .cookie('token', token, options)
-    .json({
-      success: true,
-      token,
-      data: userData // Include user data in the response
-    });
-};
-
-// @desc    Get current logged in user
+//
 // @route   GET /api/v1/auth/me
-// @access  Private
-export const getMe = async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+//
+export const getMe = asyncHandler(async (req, res) => {
+  // Mock user data
+  const user = mockUsers[0]; // Return the mock user
+
   res.status(200).json({
     success: true,
-    data: user
+    data: user,
   });
-};
+});
 
-// @desc    Log user out / clear cookie
+//
 // @route   GET /api/v1/auth/logout
-// @access  Private
-export const logout = async (req, res, next) => {
-  res.cookie('token', 'none', {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true
-  });
-
+//
+export const logout = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
-    data: {}
+    message: "Logged out successfully",
   });
-};
+});

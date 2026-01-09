@@ -38,8 +38,12 @@ const EventPreferences = () => {
       setLoading(true);
       setError(null);
       const response = await getEventPreferences();
+      console.log('Fetched preferences response:', response);
       if (response.success) {
-        setPreferences(Array.isArray(response.data) ? response.data : []);
+        const prefsArray = Array.isArray(response.data) ? response.data : [];
+        console.log('Setting preferences array:', prefsArray);
+        console.log('First preference details:', prefsArray[0]);
+        setPreferences(prefsArray);
       } else {
         throw new Error(response.message || 'Failed to fetch event preferences');
       }
@@ -59,10 +63,12 @@ const EventPreferences = () => {
     if (preference) {
       setCurrentPreference({
         id: preference._id || preference.id,
-        eventType: preference.eventType || '',
+        eventType: preference.eventType ? preference.eventType.charAt(0).toUpperCase() + preference.eventType.slice(1) : '',
         preferredVenue: preference.preferredVenue || '',
-        budgetRange: preference.budgetRange || '',
-        guestCount: preference.guestCount || '',
+        budgetRange: preference.budgetRange && typeof preference.budgetRange === 'object' 
+          ? `${preference.budgetRange.min}-${preference.budgetRange.max}`
+          : preference.budgetRange || '',
+        guestCount: preference.guestCount ? preference.guestCount.toString() : '',
         notes: preference.notes || ''
       });
       setIsEditing(true);
@@ -98,14 +104,30 @@ const EventPreferences = () => {
         await updateEventPreference(currentPreference.id, currentPreference);
         toast.success('Event preference updated successfully');
       } else {
-        await createEventPreference(currentPreference);
-        toast.success('Event preference created successfully');
+        // Try to create first, if it fails with 400, try to update the first existing preference
+        try {
+          await createEventPreference(currentPreference);
+          toast.success('Event preference created successfully');
+        } catch (createError) {
+          console.log('Create error details:', createError.response?.status, createError.response?.data);
+          if (createError.response?.status === 400) {
+            // User already has preferences, update the first one
+            if (preferences.length > 0) {
+              await updateEventPreference(preferences[0]._id || preferences[0].id, currentPreference);
+              toast.success('Event preference updated successfully');
+            } else {
+              throw createError;
+            }
+          } else {
+            throw createError;
+          }
+        }
       }
       await fetchEventPreferences();
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving event preference:', error);
-      toast.error(error.response?.data?.message || 'Failed to save event preference');
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Failed to save event preference');
     }
   };
 
@@ -140,13 +162,20 @@ const EventPreferences = () => {
           startIcon={<AddIcon />}
           onClick={() => handleOpenDialog()}
         >
-          Add Preference
+          Add New Event Preference
         </Button>
       </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
+        </Alert>
+      )}
+
+      {/* Debug: Show preferences data */}
+      {process.env.NODE_ENV === 'development' && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Debug: Preferences length: {preferences.length}, Data: {JSON.stringify(preferences, null, 2)}
         </Alert>
       )}
 
@@ -166,11 +195,16 @@ const EventPreferences = () => {
             {preferences.length > 0 ? (
               preferences.map((pref) => (
                 <TableRow key={pref._id || pref.id}>
-                  <TableCell>{pref.eventType}</TableCell>
+                  <TableCell>{pref.eventType ? pref.eventType.charAt(0).toUpperCase() + pref.eventType.slice(1) : ''}</TableCell>
                   <TableCell>{pref.preferredVenue}</TableCell>
-                  <TableCell>{pref.budgetRange}</TableCell>
+                  <TableCell>
+                    {pref.budgetRange && typeof pref.budgetRange === 'object' 
+                      ? `$${pref.budgetRange.min} - $${pref.budgetRange.max}`
+                      : pref.budgetRange || ''
+                    }
+                  </TableCell>
                   <TableCell>{pref.guestCount}</TableCell>
-                  <TableCell>{pref.notes}</TableCell>
+                  <TableCell>{pref.notes || ''}</TableCell>
                   <TableCell>
                     <IconButton onClick={() => handleOpenDialog(pref)}>
                       <EditIcon color="primary" />

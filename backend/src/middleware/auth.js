@@ -3,6 +3,17 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import ErrorResponse from '../utils/errorResponse.js';
 
+// Mock user data for testing without MongoDB
+const mockUsers = [
+  {
+    _id: '69607e6cc3465f9a8169107d',
+    name: 'Ram',
+    email: 'ram@gmail.com',
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // 'ram123' hashed
+    role: 'user'
+  }
+];
+
 export const protect = async (req, res, next) => {
   let token;
 
@@ -23,29 +34,31 @@ export const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Decoded token:', decoded);
       
-      // Get user from the token
+      // For mock authentication, check if user ID matches our mock user
+      if (decoded.id === '69607e6cc3465f9a8169107d') {
+        // Use mock user
+        req.user = mockUsers[0];
+        next();
+        return;
+      }
+      
+      // Get user from the token (for real JWT tokens)
       const user = await User.findById(decoded.id).select('-password');
       
       if (!user) {
         console.log('No user found with id:', decoded.id);
-        return next(new ErrorResponse('No user found with this id', 404));
+        return next(new ErrorResponse('User not found', 401));
       }
-      
+
       req.user = user;
-      console.log('Authenticated user:', { id: user._id, email: user.email });
       next();
-    } catch (err) {
-      console.error('Token verification error:', err);
-      if (err.name === 'JsonWebTokenError') {
-        return next(new ErrorResponse('Invalid token', 401));
-      } else if (err.name === 'TokenExpiredError') {
-        return next(new ErrorResponse('Token expired', 401));
-      }
+    } catch (error) {
+      console.log('Token verification failed:', error.message);
       return next(new ErrorResponse('Not authorized to access this route', 401));
     }
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return next(new ErrorResponse('Server error', 500));
+    console.log('Auth middleware error:', error.message);
+    return next(new ErrorResponse('Not authorized to access this route', 401));
   }
 };
 

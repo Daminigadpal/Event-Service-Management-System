@@ -2,16 +2,37 @@
 import Service from '../models/Service.js';
 import ErrorResponse from '../utils/errorResponse.js';
 
+// Mock data for testing without MongoDB
+const mockServices = [
+  {
+    _id: '696084c33d7a9dace9f7c48b',
+    name: 'Wedding Package',
+    description: 'Complete wedding decoration and catering',
+    price: 40000,
+    duration: 8
+  },
+  {
+    _id: '696084c33d7a9dace9f7c48c',
+    name: 'Birthday Party Package',
+    description: 'Complete birthday party arrangement',
+    price: 25000,
+    duration: 4
+  }
+];
+
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
 // @desc    Get all services
 // @route   GET /api/v1/services
 // @access  Public
 export const getServices = async (req, res, next) => {
-  try {
-    const services = await Service.find();
-    res.status(200).json({ success: true, count: services.length, data: services });
-  } catch (err) {
-    next(err);
-  }
+  // Return mock services for testing
+  res.status(200).json({ 
+    success: true, 
+    count: mockServices.length, 
+    data: mockServices 
+  });
 };
 
 // @desc    Create service

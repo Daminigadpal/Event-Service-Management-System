@@ -12,6 +12,10 @@ import BookingList from './pages/booking/BookingList';
 import BookingDetail from './pages/booking/BookingDetail';
 import CreateBooking from './pages/booking/CreateBooking';
 
+// Scheduling Components
+import AvailabilityCalendar from './components/scheduling/AvailabilityCalendar';
+import ScheduleView from './components/scheduling/ScheduleView';
+
 function App() {
   return (
     <Routes>
@@ -82,6 +86,25 @@ function App() {
         element={
           <PrivateRoute>
             <BookingDetail />
+          </PrivateRoute>
+        } 
+      />
+      
+      {/* Scheduling Routes */}
+      <Route 
+        path="/scheduling/calendar" 
+        element={
+          <PrivateRoute>
+            <AvailabilityCalendar />
+          </PrivateRoute>
+        } 
+      />
+      
+      <Route 
+        path="/scheduling/schedule" 
+        element={
+          <PrivateRoute>
+            <ScheduleView />
           </PrivateRoute>
         } 
       />

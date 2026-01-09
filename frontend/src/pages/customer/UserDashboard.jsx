@@ -5,10 +5,12 @@ import {
   Container, CircularProgress, Alert,
   Card, CardContent, TextField, Button
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import BookingManagement from '../../components/booking/BookingManagement';
 import EventPreferences from '../../components/event/EventPreferences';
+import PaymentManagement from '../../components/payment/PaymentManagement';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -20,7 +22,8 @@ const UserDashboard = () => {
     address: ''
   });
   const [isEditing, setIsEditing] = useState(false);
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -35,6 +38,7 @@ const UserDashboard = () => {
   }, [user]);
 
   const handleTabChange = (event, newValue) => {
+    console.log('Tab changed to:', newValue);
     setActiveTab(newValue);
   };
 
@@ -58,6 +62,12 @@ const UserDashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/login', { replace: true });
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -68,6 +78,18 @@ const UserDashboard = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header with logout button */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">Dashboard</Typography>
+        <Button 
+          variant="outlined" 
+          color="error"
+          onClick={handleLogout}
+        >
+          Logout
+        </Button>
+      </Box>
+
       <Tabs 
         value={activeTab} 
         onChange={handleTabChange} 
@@ -77,6 +99,9 @@ const UserDashboard = () => {
         <Tab label="Profile" />
         <Tab label="My Bookings" />
         <Tab label="Event Preferences" />
+        <Tab label="💳 Payments" />
+        <Tab label="📅 Availability Calendar" />
+        <Tab label="📊 Schedule View" />
       </Tabs>
 
       {activeTab === 0 && (
@@ -154,6 +179,33 @@ const UserDashboard = () => {
 
       {activeTab === 1 && <BookingManagement />}
       {activeTab === 2 && <EventPreferences />}
+      {activeTab === 3 && <PaymentManagement />}
+      {activeTab === 4 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h5">Availability Calendar</Typography>
+            <Typography variant="body2">
+              This is the Availability Calendar component. The full calendar with staff scheduling features will be displayed here.
+            </Typography>
+            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+              <Typography variant="body2">📅 Calendar features coming soon...</Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+      {activeTab === 5 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h5">Schedule View</Typography>
+            <Typography variant="body2">
+              This is the Schedule View component. Daily and weekly schedule views will be displayed here.
+            </Typography>
+            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+              <Typography variant="body2">📊 Schedule features coming soon...</Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
     </Container>
   );
 };

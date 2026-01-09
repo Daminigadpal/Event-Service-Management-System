@@ -1,31 +1,21 @@
 // backend/src/routes/user.js
 import express from 'express';
-import { protect, authorize } from '../middleware/auth.js';
 import {
-  getUsers,
-  getUser,
   createUser,
-  updateUser,
-  deleteUser,
-  updateProfile  // Make sure to import the updateProfile controller
+  updateProfile,
+  getProfile
 } from '../controllers/userController.js';
+import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Profile route - must be defined before the admin middleware
-router.put('/profile', protect, updateProfile);
+// User profile routes (protected)
+router.route('/profile')
+  .get(protect, getProfile)
+  .put(protect, updateProfile);
 
-// All routes below this line are protected and only accessible by admin
-router.use(protect);
-router.use(authorize('admin'));
-
-router.route('/')
-  .get(getUsers)
-  .post(createUser);
-
-router.route('/:id')
-  .get(getUser)
-  .put(updateUser)
-  .delete(deleteUser);
+// Admin only routes
+router.use(protect, authorize('admin'));
+router.route('/').post(createUser);
 
 export default router;

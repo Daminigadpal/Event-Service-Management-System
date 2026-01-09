@@ -3,16 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Paper, Button, 
-  IconButton, MenuItem, Select, 
-  FormControl, InputLabel, Typography,
-  Box, CircularProgress, Alert, Snackbar
+  IconButton, Dialog, DialogTitle, DialogContent, 
+  DialogActions, TextField, MenuItem, Select, 
+  FormControl, InputLabel, Typography, Box, 
+  CircularProgress, Alert, Chip
 } from '@mui/material';
 import { 
   Edit as EditIcon, 
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
-  Info as InfoIcon
+  Add as AddIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { 
@@ -20,15 +21,26 @@ import {
   createBooking, 
   updateBookingStatus, 
   deleteBooking,
-  assignStaffToBooking 
+  assignStaffToBooking,
+  cancelBooking 
 } from '../../services/bookingService';
+import { checkBookingConflicts } from '../../services/staffAvailabilityService';
 import { toast } from 'react-toastify';
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newBooking, setNewBooking] = useState({
+    service: '',
+    eventType: 'wedding',
+    eventDate: '',
+    eventLocation: '',
+    guestCount: '',
+    specialRequests: '',
+    status: 'Inquiry'
+  });
   const { user } = useAuth();
 
   const fetchBookings = async () => {
@@ -44,10 +56,7 @@ const BookingManagement = () => {
     } catch (err) {
       console.error('Error fetching bookings:', err);
       setError(err.message || 'Failed to load bookings');
-      // Fallback to mock data if available
-      if (bookings.length === 0) {
-        setBookings(mockBookings);
-      }
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -57,11 +66,76 @@ const BookingManagement = () => {
     fetchBookings();
   }, []);
 
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setNewBooking({
+      service: '',
+      eventType: 'wedding',
+      eventDate: '',
+      eventLocation: '',
+      guestCount: '',
+      specialRequests: '',
+      status: 'Inquiry'
+    });
+  };
+
+const handleCreateBooking = async () => {
+  try {
+    if (!newBooking.eventDate || !newBooking.eventLocation || !newBooking.guestCount) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Check for booking conflicts first
+    const conflictData = {
+      date: newBooking.eventDate,
+      startTime: '09:00', // Default start time (you might want to add this to form)
+      endTime: '17:00'   // Default end time (you might want to add this to form)
+    };
+
+    const conflictCheck = await checkBookingConflicts(conflictData);
+    
+    if (conflictCheck.hasConflicts) {
+      toast.error(`Booking conflicts found: ${conflictCheck.conflicts.length} existing booking(s) at the same time`);
+      return;
+    }
+
+    // Use the service ID we just created
+    const bookingData = {
+      service: '696084c33d7a9dace9f7c48b', // Wedding Planning service ID
+      eventType: newBooking.eventType,
+      eventDate: newBooking.eventDate,
+      eventLocation: newBooking.eventLocation,
+      guestCount: parseInt(newBooking.guestCount),
+      specialRequests: newBooking.specialRequests,
+      status: newBooking.status
+    };
+
+    console.log('Creating booking with data:', bookingData);
+    const response = await createBooking(bookingData);
+    setBookings([...bookings, response.data]);
+    toast.success('Booking created successfully');
+    handleCloseDialog();
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    
+    // Handle conflict errors specifically
+    if (error.response?.status === 409) {
+      toast.error(error.response?.data?.error || 'Booking time conflict detected');
+    } else {
+      toast.error(error.response?.data?.message || error.message || 'Failed to create booking');
+    }
+  }
+};
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
-      await updateBookingStatus(bookingId, { status: newStatus });
+      const response = await updateBookingStatus(bookingId, newStatus);
       setBookings(bookings.map(booking => 
-        booking.id === bookingId ? { ...booking, status: newStatus } : booking
+        booking._id === bookingId ? response.data : booking
       ));
       toast.success('Booking status updated successfully');
     } catch (error) {
@@ -70,11 +144,26 @@ const BookingManagement = () => {
     }
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        const response = await cancelBooking(bookingId);
+        setBookings(bookings.map(booking => 
+          booking._id === bookingId ? response.data : booking
+        ));
+        toast.success('Booking cancelled successfully');
+      } catch (error) {
+        console.error('Error cancelling booking:', error);
+        toast.error(error.response?.data?.message || 'Failed to cancel booking');
+      }
+    }
+  };
+
   const handleDelete = async (bookingId) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
       try {
         await deleteBooking(bookingId);
-        setBookings(bookings.filter(booking => booking.id !== bookingId));
+        setBookings(bookings.filter(booking => booking._id !== bookingId));
         toast.success('Booking deleted successfully');
       } catch (error) {
         console.error('Error deleting booking:', error);
@@ -83,33 +172,18 @@ const BookingManagement = () => {
     }
   };
 
- const handleStaffAssignment = async (bookingId, staffId) => {
-  try {
-    await assignStaffToBooking(bookingId, staffId);
-    setBookings(bookings.map(booking => 
-      booking.id === bookingId ? { 
-        ...booking, 
-        staff: staffId,
-        staffName: STAFF_MEMBERS.find(s => s.id === staffId)?.name || 'Unknown'
-      } : booking
-    ));
-    toast.success('Staff assigned successfully');
-  } catch (error) {
-    console.error('Error assigning staff:', error);
-    toast.error(error.response?.data?.message || 'Failed to assign staff');
-  }
-};
-// Update the staff selection dropdown
-<Select
-  value={booking.staff || ''}
-  onChange={(e) => handleStaffAssignment(booking.id, e.target.value)}
-  size="small"
->
-  <MenuItem value="1">John Doe</MenuItem>
-  <MenuItem value="2">Jane Smith</MenuItem>
-  <MenuItem value="3">Mike Johnson</MenuItem>
-  <MenuItem value="4">Sarah Williams</MenuItem>
-</Select>
+  const getStatusColor = (status) => {
+    const colors = {
+      inquiry: 'default',
+      quoted: 'warning',
+      confirmed: 'success',
+      inprogress: 'info',
+      completed: 'success',
+      cancelled: 'error'
+    };
+    return colors[status] || 'default';
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -118,95 +192,189 @@ const BookingManagement = () => {
     );
   }
 
-  if (error && bookings.length === 0) {
-    return (
-      <Box p={3}>
-        <Alert severity="error">
-          {error} - Using mock data for demonstration
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Booking Management
-      </Typography>
-      
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Event Type</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Guests</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Staff</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {bookings.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell>{booking.eventType}</TableCell>
-                <TableCell>{new Date(booking.date).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Select
-                    value={booking.status}
-                    onChange={(e) => handleStatusChange(booking.id, e.target.value)}
-                    size="small"
-                  >
-                    <MenuItem value="Inquiry">Inquiry</MenuItem>
-                    <MenuItem value="Quoted">Quoted</MenuItem>
-                    <MenuItem value="Confirmed">Confirmed</MenuItem>
-                    <MenuItem value="In Progress">In Progress</MenuItem>
-                    <MenuItem value="Completed">Completed</MenuItem>
-                    <MenuItem value="Cancelled">Cancelled</MenuItem>
-                  </Select>
-                </TableCell>
-                <TableCell>{booking.guests}</TableCell>
-                <TableCell>${booking.amount}</TableCell>
-                <TableCell>
-                  <Select
-                    value={booking.staff || ''}
-                    onChange={(e) => handleStaffAssignment(booking.id, e.target.value)}
-                    size="small"
-                  >
-                    <MenuItem value="John Doe">John Doe</MenuItem>
-                    <MenuItem value="Jane Smith">Jane Smith</MenuItem>
-                    <MenuItem value="Mike Johnson">Mike Johnson</MenuItem>
-                    <MenuItem value="Sarah Williams">Sarah Williams</MenuItem>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <IconButton 
-                    color="primary" 
-                    onClick={() => handleStatusChange(booking.id, 'Completed')}
-                    disabled={booking.status === 'Completed'}
-                  >
-                    <CheckCircleIcon />
-                  </IconButton>
-                  <IconButton 
-                    color="secondary" 
-                    onClick={() => handleStatusChange(booking.id, 'Cancelled')}
-                    disabled={booking.status === 'Cancelled'}
-                  >
-                    <CancelIcon />
-                  </IconButton>
-                  <IconButton 
-                    color="error" 
-                    onClick={() => handleDelete(booking.id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">My Bookings</Typography>
+        {user?.role === 'user' && (
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />}
+            onClick={handleOpenDialog}
+          >
+            New Booking
+          </Button>
+        )}
+      </Box>
+
+      {error && bookings.length === 0 && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {bookings.length === 0 ? (
+        <Alert severity="info">No bookings found</Alert>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableCell><strong>Event Type</strong></TableCell>
+                <TableCell><strong>Date</strong></TableCell>
+                <TableCell><strong>Location</strong></TableCell>
+                <TableCell><strong>Guests</strong></TableCell>
+                <TableCell><strong>Status</strong></TableCell>
+                <TableCell><strong>Payment</strong></TableCell>
+                <TableCell><strong>Actions</strong></TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {bookings.map((booking) => (
+                <TableRow key={booking._id}>
+                  <TableCell sx={{ textTransform: 'capitalize' }}>
+                    {booking.eventType}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(booking.eventDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>{booking.eventLocation}</TableCell>
+                  <TableCell>{booking.guestCount}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={booking.status.toUpperCase()} 
+                      color={getStatusColor(booking.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {booking.paymentStatus ? booking.paymentStatus.toUpperCase() : 'N/A'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={booking.paymentStatus ? booking.paymentStatus.toUpperCase() : 'N/A'}
+                      color={booking.paymentStatus === 'paid' ? 'success' : 'warning'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                      <IconButton 
+                        color="error" 
+                        size="small"
+                        onClick={() => handleCancelBooking(booking._id)}
+                        title="Cancel booking"
+                      >
+                        <CancelIcon />
+                      </IconButton>
+                    )}
+                    <IconButton 
+                      color="error" 
+                      size="small"
+                      onClick={() => handleDelete(booking._id)}
+                      title="Delete booking"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      {/* New Booking Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Booking</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>Event Type</InputLabel>
+              <Select
+                value={newBooking.eventType}
+                onChange={(e) => setNewBooking({ ...newBooking, eventType: e.target.value })}
+                label="Event Type"
+              >
+                <MenuItem value="wedding">Wedding</MenuItem>
+                <MenuItem value="birthday">Birthday</MenuItem>
+                <MenuItem value="corporate">Corporate</MenuItem>
+                <MenuItem value="anniversary">Anniversary</MenuItem>
+                <MenuItem value="graduation">Graduation</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Booking Status</InputLabel>
+              <Select
+                value={newBooking.status}
+                onChange={(e) => setNewBooking({ ...newBooking, status: e.target.value })}
+                label="Booking Status"
+              >
+                <MenuItem value="Inquiry">Inquiry</MenuItem>
+                <MenuItem value="Quoted">Quoted</MenuItem>
+                <MenuItem value="Confirmed">Confirmed</MenuItem>
+                <MenuItem value="In Progress">In Progress</MenuItem>
+                <MenuItem value="Completed">Completed</MenuItem>
+                <MenuItem value="Cancelled">Cancelled</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              label="Service"
+              value={newBooking.service}
+              onChange={(e) => setNewBooking({ ...newBooking, service: e.target.value })}
+              placeholder="Enter service ID or name"
+            />
+
+            <TextField
+              fullWidth
+              type="date"
+              label="Event Date"
+              value={newBooking.eventDate}
+              onChange={(e) => setNewBooking({ ...newBooking, eventDate: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+
+            <TextField
+              fullWidth
+              label="Event Location"
+              value={newBooking.eventLocation}
+              onChange={(e) => setNewBooking({ ...newBooking, eventLocation: e.target.value })}
+              placeholder="Enter event location"
+            />
+
+            <TextField
+              fullWidth
+              type="number"
+              label="Guest Count"
+              value={newBooking.guestCount}
+              onChange={(e) => setNewBooking({ ...newBooking, guestCount: parseInt(e.target.value) })}
+              inputProps={{ min: 1 }}
+            />
+
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Special Requests"
+              value={newBooking.specialRequests}
+              onChange={(e) => setNewBooking({ ...newBooking, specialRequests: e.target.value })}
+              placeholder="Any special requirements or requests?"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleCreateBooking} variant="contained" color="primary">
+            Create Booking
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

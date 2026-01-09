@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 export default function BookEvent() {
@@ -7,105 +7,95 @@ export default function BookEvent() {
     service: "",
     eventDate: "",
     location: "",
-    notes: ""
+    notes: "",
+    status: "Inquiry" // default booking status
   });
+
   const [services, setServices] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
-  // Fetch services when component mounts
+  // Fetch services
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await api.get('/services');
+        const response = await api.get("/services");
         setServices(response.data.data);
       } catch (err) {
-        console.error('Error fetching services:', err);
-        setError('Failed to load services. Please try again later.');
+        console.error("Error fetching services:", err);
+        setError("Failed to load services. Please try again later.");
       }
     };
 
     fetchServices();
   }, []);
 
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value
     }));
   };
 
+  // Submit booking
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
+
     if (!formData.service || !formData.eventDate || !formData.location) {
-      setError('Please fill in all required fields');
+      setError("Please fill in all required fields");
       return;
     }
 
     setIsLoading(true);
     setError("");
-    
+
     try {
-      // Get the token from local storage
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        // Redirect to login if no token is found
-        navigate('/login', { state: { from: '/book-event' } });
+        navigate("/login", { state: { from: "/book-event" } });
         return;
       }
 
-      // Format the date for the backend
       const bookingData = {
         ...formData,
-        eventDate: new Date(formData.eventDate).toISOString(),
-        service: formData.service // This should be the service ID
+        eventDate: new Date(formData.eventDate).toISOString()
       };
 
-      // Make the API call
-      const response = await api.post('/bookings', bookingData, {
+      const response = await api.post("/bookings", bookingData, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
         }
       });
 
-      // Handle successful booking
       if (response.data.success) {
-        alert('Booking created successfully!');
-        // Reset form
+        alert("Booking created successfully!");
         setFormData({
           service: "",
           eventDate: "",
           location: "",
-          notes: ""
+          notes: "",
+          status: "Inquiry"
         });
-        // Optionally redirect to bookings list or dashboard
-        // navigate('/dashboard');
       }
     } catch (err) {
-      console.error('Error creating booking:', err);
-      
-      // Handle different types of errors
+      console.error("Error creating booking:", err);
+
       if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         if (err.response.status === 401) {
-          // Unauthorized - redirect to login
-          navigate('/login', { state: { from: '/book-event' } });
+          navigate("/login", { state: { from: "/book-event" } });
           return;
         }
-        setError(err.response.data.message || 'Failed to create booking. Please try again.');
+        setError(err.response.data.message || "Failed to create booking.");
       } else if (err.request) {
-        // The request was made but no response was received
-        setError('No response from server. Please check your connection.');
+        setError("No response from server. Please check your connection.");
       } else {
-        // Something happened in setting up the request
-        setError('An error occurred. Please try again.');
+        setError("An unexpected error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -114,105 +104,144 @@ export default function BookEvent() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <h2 className="text-2xl font-bold text-center mb-6">Book an Event</h2>
-      
+      <h2 className="text-2xl font-bold text-center mb-6">
+        Book an Event
+      </h2>
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow-md rounded px-8 pt-6 pb-8"
+      >
+        {/* DEBUG: This should always be visible */}
+        <div style={{ backgroundColor: 'red', color: 'white', padding: '20px', margin: '20px 0', textAlign: 'center' }}>
+          DEBUG: Form is rendering! Status value: {formData.status}
+        </div>
+
+        {/* Service */}
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="service">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
             Service <span className="text-red-500">*</span>
           </label>
           <select
-            id="service"
             name="service"
             value={formData.service}
             onChange={handleChange}
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="shadow border rounded w-full py-2 px-3"
           >
             <option value="">Select a service</option>
-            {services.map(service => (
+            {services.map((service) => (
               <option key={service._id} value={service._id}>
-                {service.name} - ${service.price}
+                {service.name} - ₹{service.price}
               </option>
             ))}
           </select>
         </div>
-        
+
+        {/* Status */}
+        <div className="mb-4" style={{ border: '2px solid red', padding: '10px', backgroundColor: 'yellow' }}>
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Booking Status
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            className="shadow border rounded w-full py-2 px-3"
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              backgroundColor: 'white',
+              fontSize: '16px'
+            }}
+          >
+            <option value="Inquiry">Inquiry</option>
+            <option value="Quoted">Quoted</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          {/* Debug: Show current status */}
+          <p className="text-xs text-gray-500 mt-1">Current status: {formData.status}</p>
+        </div>
+
+        {/* Event Date */}
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="eventDate">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
             Event Date & Time <span className="text-red-500">*</span>
           </label>
           <input
             type="datetime-local"
-            id="eventDate"
             name="eventDate"
             value={formData.eventDate}
             onChange={handleChange}
             required
-            min={new Date().toISOString().slice(0, 16)} // Prevent past dates
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            min={new Date().toISOString().slice(0, 16)}
+            className="shadow border rounded w-full py-2 px-3"
           />
         </div>
-        
+
+        {/* Location */}
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="location">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
             Location <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            id="location"
             name="location"
             value={formData.location}
             onChange={handleChange}
             required
             placeholder="Enter event location"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="shadow border rounded w-full py-2 px-3"
           />
         </div>
-        
+
+        {/* Notes */}
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="notes">
-            Additional Notes (Optional)
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Additional Notes
           </label>
           <textarea
-            id="notes"
             name="notes"
             value={formData.notes}
             onChange={handleChange}
-            placeholder="Any special requirements or notes..."
             rows="3"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            className="shadow border rounded w-full py-2 px-3"
           />
         </div>
-        
-        <div className="flex items-center justify-between">
+
+        {/* Buttons */}
+        <div className="flex justify-between">
           <button
             type="submit"
             disabled={isLoading}
-            className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           >
-            {isLoading ? 'Processing...' : 'Book Now'}
+            {isLoading ? "Processing..." : "Book Now"}
           </button>
-          
+
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
           >
             Cancel
           </button>
         </div>
       </form>
-      
-      <p className="text-center text-gray-500 text-xs">
+
+      <p className="text-center text-gray-500 text-xs mt-4">
         * Required fields
       </p>
     </div>

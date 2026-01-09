@@ -1,131 +1,341 @@
 // backend/src/controllers/bookingController.js
 import Booking from '../models/Booking.js';
+import Service from '../models/Service.js';
+import User from '../models/User.js';
 import ErrorResponse from '../utils/errorResponse.js';
 
-// @desc    Get all bookings
+// Mock data for testing without MongoDB
+let mockBookings = [
+  {
+    _id: 'booking_1',
+    eventType: 'Wedding',
+    eventDate: new Date('2024-06-15'),
+    eventLocation: 'Delhi',
+    status: 'confirmed',
+    customer: '69607e6cc3465f9a8169107d',
+    service: {
+      _id: 'service_1',
+      name: 'Wedding Package',
+      description: 'Complete wedding decoration and catering',
+      price: 40000,
+      duration: 8
+    }
+  },
+  {
+    _id: 'booking_2',
+    eventType: 'Birthday Party',
+    eventDate: new Date('2024-07-20'),
+    eventLocation: 'Mumbai',
+    status: 'pending',
+    customer: '69607e6cc3465f9a8169107d',
+    service: {
+      _id: 'service_2',
+      name: 'Birthday Party Package',
+      description: 'Complete birthday party arrangement',
+      price: 25000,
+      duration: 4
+    }
+  }
+];
+
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+// @desc    Get all bookings (Admin) or user's bookings (Customer/Staff)
 // @route   GET /api/v1/bookings
 // @access  Private
-export const getBookings = async (req, res, next) => {
-  try {
-    const bookings = await Booking.find().populate('user', 'name email');
-    res.status(200).json({ success: true, count: bookings.length, data: bookings });
-  } catch (err) {
-    next(err);
-  }
-};
+export const getBookings = asyncHandler(async (req, res, next) => {
+  // Return mock bookings for testing
+  res.status(200).json({
+    success: true,
+    data: mockBookings,
+    count: mockBookings.length
+  });
+});
 
 // @desc    Get single booking
 // @route   GET /api/v1/bookings/:id
 // @access  Private
-export const getBooking = async (req, res, next) => {
-  try {
-    const booking = await Booking.findById(req.params.id).populate('user', 'name email');
-    if (!booking) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
-    }
-    res.status(200).json({ success: true, data: booking });
-  } catch (err) {
-    next(err);
-  }
-};
+export const getBooking = asyncHandler(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id)
+    .populate('service')
+    .populate('customer', 'name email phone')
+    .populate('staffAssigned', 'name email phone');
 
-// @desc    Create booking
+  if (!booking) {
+    return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
+  }
+
+  // Check authorization
+  if (booking.customer._id.toString() !== req.user.id && 
+      booking.staffAssigned?._id.toString() !== req.user.id &&
+      req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to access this booking', 401));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: booking
+  });
+});
+
+// @desc    Create booking (Inquiry)
 // @route   POST /api/v1/bookings
 // @access  Private
-export const createBooking = async (req, res, next) => {
-  try {
-    // Add user to req.body
-    req.body.user = req.user.id;
-    const booking = await Booking.create(req.body);
-    res.status(201).json({ success: true, data: booking });
-  } catch (err) {
-    next(err);
+export const createBooking = asyncHandler(async (req, res, next) => {
+  const { service, eventType, eventDate, eventLocation, guestCount, specialRequests } = req.body;
+
+  // Validate required fields
+  if (!service || !eventType || !eventDate || !eventLocation || !guestCount) {
+    return next(new ErrorResponse('Please provide all required fields', 400));
   }
-};
+
+  // Create mock booking
+  const newBooking = {
+    _id: `booking_${Date.now()}`,
+    customer: req.user.id,
+    service: {
+      _id: service,
+      name: 'Wedding Package',
+      description: 'Complete wedding decoration and catering',
+      price: 40000,
+      duration: 8
+    },
+    eventType,
+    eventDate: new Date(eventDate),
+    eventLocation,
+    guestCount: parseInt(guestCount),
+    specialRequests,
+    status: 'inquiry',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  // Add to mock bookings
+  mockBookings.push(newBooking);
+
+  res.status(201).json({
+    success: true,
+    message: 'Booking inquiry created successfully',
+    data: newBooking
+  });
+});
 
 // @desc    Update booking
 // @route   PUT /api/v1/bookings/:id
 // @access  Private
-export const updateBooking = async (req, res, next) => {
-  try {
-    let booking = await Booking.findById(req.params.id);
-    if (!booking) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
-    }
+export const updateBooking = asyncHandler(async (req, res, next) => {
+  let booking = await Booking.findById(req.params.id);
 
-    // Make sure user is booking owner or admin
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-      return next(new ErrorResponse(`Not authorized to update this booking`, 401));
-    }
-
-    booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-
-    res.status(200).json({ success: true, data: booking });
-  } catch (err) {
-    next(err);
+  if (!booking) {
+    return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
   }
-};
 
-// @desc    Delete booking
-// @route   DELETE /api/v1/bookings/:id
+  // Check authorization
+  if (booking.customer.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to update this booking', 401));
+  }
+
+  // Don't allow updating certain fields directly
+  const { status, paymentStatus, staffAssigned, ...updateData } = req.body;
+
+  booking = await Booking.findByIdAndUpdate(req.params.id, updateData, {
+    new: true,
+    runValidators: true
+  }).populate('service').populate('customer').populate('staffAssigned');
+
+  res.status(200).json({
+    success: true,
+    message: 'Booking updated successfully',
+    data: booking
+  });
+});
+
+// @desc    Send quote to customer
+// @route   PUT /api/v1/bookings/:id/quote
+// @access  Private/Admin
+export const sendQuote = asyncHandler(async (req, res, next) => {
+  const { quotedPrice } = req.body;
+
+  if (!quotedPrice) {
+    return next(new ErrorResponse('Quoted price is required', 400));
+  }
+
+  const booking = await Booking.findByIdAndUpdate(
+    req.params.id,
+    {
+      quotedPrice,
+      quotedAt: new Date(),
+      status: 'quoted'
+    },
+    { new: true, runValidators: true }
+  ).populate('service').populate('customer');
+
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Quote sent to customer',
+    data: booking
+  });
+});
+
+// @desc    Confirm booking
+// @route   PUT /api/v1/bookings/:id/confirm
 // @access  Private
-export const deleteBooking = async (req, res, next) => {
-  try {
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
-    }
+export const confirmBooking = asyncHandler(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id);
 
-    // Make sure user is booking owner or admin
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-      return next(new ErrorResponse(`Not authorized to delete this booking`, 401));
-    }
-
-    await booking.remove();
-    res.status(200).json({ success: true, data: {} });
-  } catch (err) {
-    next(err);
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
   }
-};
+
+  // Check authorization
+  if (booking.customer.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to confirm this booking', 401));
+  }
+
+  if (booking.status !== 'quoted') {
+    return next(new ErrorResponse('Only quoted bookings can be confirmed', 400));
+  }
+
+  booking.status = 'confirmed';
+  booking.confirmationDate = new Date();
+  await booking.save();
+
+  await booking.populate('service').populate('customer').populate('staffAssigned');
+
+  res.status(200).json({
+    success: true,
+    message: 'Booking confirmed successfully',
+    data: booking
+  });
+});
 
 // @desc    Assign staff to booking
 // @route   PUT /api/v1/bookings/:id/assign-staff
 // @access  Private/Admin
-export const assignStaffToBooking = async (req, res, next) => {
-  try {
-    const { staffId } = req.body;
-    
-    if (!staffId) {
-      return next(new ErrorResponse('Please provide a staff ID', 400));
-    }
+export const assignStaffToBooking = asyncHandler(async (req, res, next) => {
+  const { staffId } = req.body;
 
-    let booking = await Booking.findById(req.params.id);
-    if (!booking) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
-    }
-
-    // Check if the staff exists
-    const staff = await mongoose.model('User').findById(staffId);
-    if (!staff) {
-      return next(new ErrorResponse(`Staff not found with id of ${staffId}`, 404));
-    }
-
-    // Update the staffAssigned field
-    booking.staffAssigned = staffId;
-    await booking.save();
-
-    // Populate the staff details in the response
-    booking = await Booking.findById(booking._id).populate('staffAssigned', 'name email');
-
-    res.status(200).json({ 
-      success: true, 
-      data: booking,
-      message: `Staff assigned to booking successfully`
-    });
-  } catch (err) {
-    next(err);
+  if (!staffId) {
+    return next(new ErrorResponse('Staff ID is required', 400));
   }
-};
+
+  // Verify staff exists and is actually staff
+  const staff = await User.findById(staffId);
+  if (!staff || staff.role !== 'staff') {
+    return next(new ErrorResponse('Invalid staff member', 404));
+  }
+
+  const booking = await Booking.findByIdAndUpdate(
+    req.params.id,
+    {
+      staffAssigned: staffId,
+      staffAssignedAt: new Date()
+    },
+    { new: true, runValidators: true }
+  ).populate('service').populate('customer').populate('staffAssigned');
+
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Staff assigned to booking',
+    data: booking
+  });
+});
+
+// @desc    Update booking status
+// @route   PUT /api/v1/bookings/:id/status
+// @access  Private/Admin
+export const updateBookingStatus = asyncHandler(async (req, res, next) => {
+  const { status } = req.body;
+
+  if (!status) {
+    return next(new ErrorResponse('Status is required', 400));
+  }
+
+  const validStatuses = ['inquiry', 'quoted', 'confirmed', 'inprogress', 'completed', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    return next(new ErrorResponse('Invalid status', 400));
+  }
+
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
+  }
+
+  booking.status = status;
+  if (status === 'completed') {
+    booking.completionDate = new Date();
+  }
+
+  await booking.save();
+  await booking.populate('service').populate('customer').populate('staffAssigned');
+
+  res.status(200).json({
+    success: true,
+    message: `Booking status updated to ${status}`,
+    data: booking
+  });
+});
+
+// @desc    Cancel booking
+// @route   PUT /api/v1/bookings/:id/cancel
+// @access  Private
+export const cancelBooking = asyncHandler(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
+  }
+
+  // Check authorization
+  if (booking.customer.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(new ErrorResponse('Not authorized to cancel this booking', 401));
+  }
+
+  if (['completed', 'cancelled'].includes(booking.status)) {
+    return next(new ErrorResponse(`Cannot cancel a ${booking.status} booking`, 400));
+  }
+
+  booking.status = 'cancelled';
+  await booking.save();
+
+  await booking.populate('service').populate('customer').populate('staffAssigned');
+
+  res.status(200).json({
+    success: true,
+    message: 'Booking cancelled successfully',
+    data: booking
+  });
+});
+
+// @desc    Delete booking
+// @route   DELETE /api/v1/bookings/:id
+// @access  Private/Admin/User (own bookings only)
+export const deleteBooking = asyncHandler(async (req, res, next) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return next(new ErrorResponse('Booking not found', 404));
+  }
+
+  // Allow admins to delete any booking, or users to delete their own bookings
+  if (req.user.role !== 'admin' && booking.customer.toString() !== req.user.id) {
+    return next(new ErrorResponse('Not authorized to delete this booking', 403));
+  }
+
+  await Booking.findByIdAndDelete(req.params.id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Booking deleted successfully',
+    data: {}
+  });
+});

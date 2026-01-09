@@ -24,9 +24,17 @@ const mockEventPreferences = [
 // Get all event preferences
 export const getEventPreferences = async () => {
   try {
+    console.log('Making GET request to /event-preferences');
+    const token = localStorage.getItem('token');
+    console.log('Token available:', !!token);
+    console.log('Token value (first 20 chars):', token ? token.substring(0, 20) + '...' : 'none');
+    
     const response = await api.get('/event-preferences');
+    console.log('GET request successful:', response.data);
     return response.data;
   } catch (error) {
+    console.error('GET request failed:', error.message);
+    console.error('Error details:', error.response?.status, error.response?.data);
     console.warn('Using mock data due to API error:', error.message);
     return { success: true, data: mockEventPreferences };
   }
@@ -35,18 +43,26 @@ export const getEventPreferences = async () => {
 // Create a new event preference
 export const createEventPreference = async (preferenceData) => {
   try {
-    const response = await api.post('/event-preferences', preferenceData);
+    console.log('Creating event preference with data:', preferenceData);
+    // Use direct URL to bypass proxy cache issues
+    const response = await api.post('http://localhost:5004/api/v1/event-preferences', preferenceData);
+    console.log('Event preference created successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error creating event preference:', error);
+    // If it's a 500 error, provide a helpful message
+    if (error.response?.status === 500) {
+      console.error('Backend error - this might be due to MongoDB connection issues');
+    }
     throw error;
   }
 };
 
 // Update an event preference
-export const updateEventPreference = async (id, preferenceData) => {
+export const updateEventPreference = async (preferenceData) => {
   try {
-    const response = await api.put(`/event-preferences/${id}`, preferenceData);
+    // Use direct URL to bypass proxy cache issues
+    const response = await api.put('http://localhost:5004/api/v1/event-preferences', preferenceData);
     return response.data;
   } catch (error) {
     console.error('Error updating event preference:', error);

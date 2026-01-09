@@ -1,53 +1,74 @@
 // models/Payment.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const PaymentSchema = new mongoose.Schema({
+const paymentSchema = new mongoose.Schema({
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
-    required: true
+    required: [true, 'Booking ID is required']
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: [true, 'User ID is required']
+  },
+  paymentType: {
+    type: String,
+    enum: ['advance', 'balance', 'full'],
+    required: [true, 'Payment type is required']
   },
   amount: {
     type: Number,
-    required: [true, 'Please add an amount']
+    required: [true, 'Please add an amount'],
+    min: [0, 'Amount must be positive']
   },
   paymentMethod: {
     type: String,
     required: [true, 'Please add a payment method'],
-    enum: ['credit_card', 'debit_card', 'bank_transfer', 'cash', 'other']
+    enum: ['credit_card', 'debit_card', 'bank_transfer', 'cash', 'upi', 'cheque', 'other']
   },
   transactionId: {
     type: String,
-    required: [true, 'Please add a transaction ID']
+    trim: true
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
+    enum: ['pending', 'partial', 'paid', 'failed', 'refunded'],
     default: 'pending'
   },
   paymentDate: {
     type: Date,
     default: Date.now
   },
-  notes: String
+  notes: String,
+  receiptNumber: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  quotationId: {
+    type: String,
+    trim: true
+  }
 }, {
   timestamps: true
 });
 
+// Index for efficient querying
+paymentSchema.index({ booking: 1 });
+paymentSchema.index({ user: 1 });
+paymentSchema.index({ status: 1 });
+paymentSchema.index({ paymentDate: -1 });
+
 // Update booking payment status when payment is completed
-PaymentSchema.post('save', async function() {
-  const Booking = require('./Booking');
+paymentSchema.post('save', async function() {
+  const Booking = await import('./Booking.js');
   
-  if (this.status === 'completed') {
-    const booking = await Booking.findById(this.booking);
+  if (this.status === 'paid') {
+    const booking = await Booking.default.findById(this.booking);
     const payments = await this.constructor.find({ 
       booking: this.booking,
-      status: 'completed'
+      status: 'paid'
     });
     
     const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -63,4 +84,6 @@ PaymentSchema.post('save', async function() {
   }
 });
 
-module.exports = mongoose.model('Payment', PaymentSchema);
+const Payment = mongoose.model('Payment', paymentSchema);
+
+export default Payment;

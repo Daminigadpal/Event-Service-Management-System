@@ -10,6 +10,9 @@ import userRoutes from "./src/routes/user.js";
 import serviceRoutes from "./src/routes/service.js";
 import bookingRoutes from "./src/routes/booking.js";
 import eventPreferenceRoutes from "./src/routes/eventPreferenceRoutes.js";
+import staffAvailabilityRoutes from "./src/routes/staffAvailabilityRoutes.js";
+import eventReminderRoutes from "./src/routes/eventReminderRoutes.js";
+import paymentRoutes from "./src/routes/paymentRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -17,7 +20,10 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 
 // API routes
@@ -26,6 +32,9 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/event-preferences", eventPreferenceRoutes);
+app.use("/api/v1/staff-availability", staffAvailabilityRoutes);
+app.use("/api/v1/event-reminders", eventReminderRoutes);
+app.use("/api/v1/payments", paymentRoutes);
 
 // Basic route for testing
 app.get("/", (req, res) => {
@@ -35,26 +44,33 @@ app.get("/", (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: err.message });
+  
+  // If it's an ErrorResponse with a specific status code, use that
+  if (err.statusCode) {
+    res.status(err.statusCode).json({ 
+      success: false, 
+      error: err.message 
+    });
+  } else {
+    // Default to 500 for other errors
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
+  }
 });
 
 // MongoDB connection and server start
 const startServer = async () => {
   try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
-    }
-
-    console.log('Connecting to MongoDB...');
-    
-    // Simple connection without options
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('MongoDB connected successfully');
+    // Skip MongoDB connection for now and use in-memory data
+    console.log('Starting server without MongoDB connection (for testing)...');
     
     const PORT = process.env.PORT || 5000;
     const server = app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
       console.log(`API available at http://localhost:${PORT}/api/v1`);
+      console.log('⚠️  MongoDB connection skipped - using in-memory data for testing');
     });
 
     // Handle server errors
@@ -65,16 +81,6 @@ const startServer = async () => {
 
   } catch (err) {
     console.error('Server startup error:', err.message);
-    
-    // More specific error messages
-    if (err.message.includes('getaddrinfo ENOTFOUND')) {
-      console.error('Error: Could not resolve the MongoDB hostname. Please check your MONGODB_URI');
-    } else if (err.message.includes('bad auth')) {
-      console.error('Error: Authentication failed. Please check your MongoDB credentials');
-    } else if (err.message.includes('ECONNREFUSED')) {
-      console.error('Error: Could not connect to MongoDB. Make sure MongoDB is running and accessible');
-    }
-    
     process.exit(1);
   }
 };
