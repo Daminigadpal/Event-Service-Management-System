@@ -52,6 +52,8 @@ export const createEventPreference = asyncHandler(async (req, res, next) => {
     updatedAt: new Date()
   };
 
+  console.log('Creating new preference:', newPreference);
+
   // Add to mock data
   mockEventPreferences.push(newPreference);
 

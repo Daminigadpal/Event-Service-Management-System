@@ -325,85 +325,130 @@ const PaymentManagement = () => {
   const getInvoiceTypeColor = (type) => {
     const colors = {
       quotation: 'info',
-      proforma: 'warning',
-      final: 'primary'
+      invoice: 'primary',
+      receipt: 'success'
     };
     return colors[type] || 'default';
   };
 
-  const renderPaymentsTable = () => (
-    <TableContainer component={Paper}>
-      <Table size="small">
-        <TableHead>
-          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-            <TableCell><strong>Date</strong></TableCell>
-            <TableCell><strong>Booking</strong></TableCell>
-            <TableCell><strong>Type</strong></TableCell>
-            <TableCell><strong>Amount</strong></TableCell>
-            <TableCell><strong>Method</strong></TableCell>
-            <TableCell><strong>Status</strong></TableCell>
-            <TableCell><strong>Actions</strong></TableCell>
+  const handleDownloadInvoice = (invoice) => {
+    // Create invoice content as text
+    const invoiceContent = `
+INVOICE #${invoice.invoiceNumber || invoice._id}
+===============================================
+Date: ${new Date(invoice.issueDate).toLocaleDateString()}
+Type: ${invoice.invoiceType?.toUpperCase() || 'INVOICE'}
+Status: ${invoice.status?.toUpperCase() || 'PENDING'}
+
+BOOKING DETAILS:
+- Event Type: ${invoice.booking?.eventType || 'N/A'}
+- Event Date: ${new Date(invoice.booking?.eventDate).toLocaleDateString()}
+- Location: ${invoice.booking?.eventLocation || 'N/A'}
+
+PAYMENT DETAILS:
+- Subtotal: ₹${invoice.subtotal?.toLocaleString() || '0'}
+- Tax Rate: ${invoice.taxRate || 0}%
+- Tax Amount: ₹${invoice.taxAmount?.toLocaleString() || '0'}
+- Total Amount: ₹${invoice.totalAmount?.toLocaleString() || '0'}
+
+NOTES: ${invoice.notes || 'N/A'}
+TERMS: ${invoice.terms || 'N/A'}
+===============================================
+    `;
+    
+    // Create a blob with the invoice content
+    const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob);
+    
+    // Create a temporary anchor element and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Invoice_${invoice.invoiceNumber || invoice._id}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success(`Invoice ${invoice.invoiceNumber || invoice._id} downloaded successfully`);
+  };
+
+const renderPaymentsTable = () => (
+  <TableContainer component={Paper}>
+    <Table size="small">
+      <TableHead>
+        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+          <TableCell><strong>Date</strong></TableCell>
+          <TableCell><strong>Booking</strong></TableCell>
+          <TableCell><strong>Type</strong></TableCell>
+          <TableCell><strong>Amount</strong></TableCell>
+          <TableCell><strong>Method</strong></TableCell>
+          <TableCell><strong>Status</strong></TableCell>
+          <TableCell><strong>Actions</strong></TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {payments.map((payment) => (
+          <TableRow key={payment._id}>
+            <TableCell>
+              {new Date(payment.paymentDate).toLocaleDateString()}
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                {payment.booking?.eventType}
+              </Typography>
+              <Typography variant="caption" display="block">
+                {new Date(payment.booking?.eventDate).toLocaleDateString()}
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Chip
+                label={payment.paymentType}
+                color={getPaymentTypeColor(payment.paymentType)}
+                size="small"
+              />
+            </TableCell>
+            <TableCell>
+              ₹{payment.amount.toLocaleString()}
+            </TableCell>
+            <TableCell>
+              <Typography variant="body2">
+                {payment.paymentMethod.replace('_', ' ').toUpperCase()}
+              </Typography>
+            </TableCell>
+            <TableCell>
+              <Chip
+                label={payment.status}
+                color={getStatusColor(payment.status)}
+                size="small"
+              />
+            </TableCell>
+            <TableCell>
+              <IconButton
+                color="primary"
+                size="small"
+                onClick={() => handleOpenDialog(payment)}
+                title="Edit payment"
+              >
+                <EditIcon />
+              </IconButton>
+              <IconButton
+                color="error"
+                size="small"
+                onClick={() => handleDeletePayment(payment._id)}
+                title="Delete payment"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </TableCell>
           </TableRow>
-        </TableHead>
-        <TableBody>
-          {payments.map((payment) => (
-            <TableRow key={payment._id}>
-              <TableCell>
-                {new Date(payment.paymentDate).toLocaleDateString()}
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                  {payment.booking?.eventType}
-                </Typography>
-                <Typography variant="caption" display="block">
-                  {new Date(payment.booking?.eventDate).toLocaleDateString()}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={payment.paymentType}
-                  color={getPaymentTypeColor(payment.paymentType)}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                ₹{payment.amount.toLocaleString()}
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">
-                  {payment.paymentMethod.replace('_', ' ').toUpperCase()}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={payment.status}
-                  color={getStatusColor(payment.status)}
-                  size="small"
-                />
-              </TableCell>
-              <TableCell>
-                <IconButton
-                  color="primary"
-                  size="small"
-                  onClick={() => handleOpenDialog(payment)}
-                  title="Edit payment"
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  color="error"
-                  size="small"
-                  onClick={() => handleDeletePayment(payment._id)}
-                  title="Delete payment"
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
   );
 
   const renderInvoicesTable = () => (
@@ -460,6 +505,7 @@ const PaymentManagement = () => {
                   color="primary"
                   size="small"
                   title="Download PDF"
+                  onClick={() => handleDownloadInvoice(invoice)}
                 >
                   <PdfIcon />
                 </IconButton>
@@ -738,5 +784,6 @@ const PaymentManagement = () => {
     </Box>
   );
 };
+
 
 export default PaymentManagement;

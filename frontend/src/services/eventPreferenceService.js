@@ -45,7 +45,7 @@ export const createEventPreference = async (preferenceData) => {
   try {
     console.log('Creating event preference with data:', preferenceData);
     // Use direct URL to bypass proxy cache issues
-    const response = await api.post('http://localhost:5004/api/v1/event-preferences', preferenceData);
+    const response = await api.post('/event-preferences', preferenceData);
     console.log('Event preference created successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -62,7 +62,7 @@ export const createEventPreference = async (preferenceData) => {
 export const updateEventPreference = async (preferenceData) => {
   try {
     // Use direct URL to bypass proxy cache issues
-    const response = await api.put('http://localhost:5004/api/v1/event-preferences', preferenceData);
+    const response = await api.put('/event-preferences', preferenceData);
     return response.data;
   } catch (error) {
     console.error('Error updating event preference:', error);

@@ -1,5 +1,4 @@
 // backend/src/controllers/userController.js
-import User from '../models/User.js';
 import ErrorResponse from '../utils/errorResponse.js';
 
 // Add asyncHandler directly in this file
@@ -7,53 +6,55 @@ const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// @desc    Create user
-// @route   POST /api/v1/users
-// @access   Private/Admin
-export const createUser = asyncHandler(async (req, res, next) => {
-  const user = await User.create(req.body);
-
-  res.status(201).json({
-    success: true,
-    data: user
-  });
-});
+// Mock user data for testing without MongoDB
+let mockUsers = [
+  {
+    _id: '69607e6cc3465f9a8169107d',
+    name: 'Ram',
+    email: 'ram@gmail.com',
+    phone: '12345678',
+    address: '',
+    role: 'user',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
 
 // @desc    Update user profile
 // @route   PUT /api/v1/users/profile
 // @access   Private
 export const updateProfile = asyncHandler(async (req, res, next) => {
   try {
-    console.log('Updating profile for user:', req.user.id);
-    console.log('Request body:', req.body);
-
-    const { name, email, phone, address, profileImage } = req.body;
-    const updateObj = {};
+    const { name, email, phone, address } = req.body;
     
-    if (name !== undefined) updateObj.name = name;
-    if (email !== undefined) updateObj.email = email;
-    if (phone !== undefined) updateObj.phone = phone;
-    if (address !== undefined) updateObj.address = address;
-    if (profileImage !== undefined) updateObj.profileImage = profileImage;
-
-    console.log('Update object:', updateObj);
-
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $set: updateObj },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!user) {
+    console.log('Updating profile for user:', req.user.id);
+    console.log('Update data:', { name, email, phone, address });
+    
+    // Find user in mock data
+    const userIndex = mockUsers.findIndex(user => user._id === req.user.id);
+    
+    if (userIndex === -1) {
       console.log('User not found with id:', req.user.id);
       return next(new ErrorResponse('User not found', 404));
     }
-
-    console.log('Successfully updated user:', user);
-
+    
+    // Update user in mock data
+    const updatedUser = {
+      ...mockUsers[userIndex],
+      name: name || mockUsers[userIndex].name,
+      email: email || mockUsers[userIndex].email,
+      phone: phone || mockUsers[userIndex].phone,
+      address: address || mockUsers[userIndex].address,
+      updatedAt: new Date()
+    };
+    
+    mockUsers[userIndex] = updatedUser;
+    
+    console.log('Successfully updated user:', updatedUser);
+    
     res.status(200).json({
       success: true,
-      data: user,
+      data: updatedUser,
       message: 'Profile updated successfully'
     });
   } catch (error) {
@@ -66,14 +67,65 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/users/profile
 // @access   Private
 export const getProfile = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id).select('-password');
-
-  if (!user) {
-    return next(new ErrorResponse('User not found', 404));
+  try {
+    console.log('Getting profile for user:', req.user.id);
+    
+    // Find user in mock data
+    const user = mockUsers.find(user => user._id === req.user.id);
+    
+    if (!user) {
+      console.log('User not found with id:', req.user.id);
+      return next(new ErrorResponse('User not found', 404));
+    }
+    
+    console.log('Found user:', user);
+    
+    res.status(200).json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error getting profile:', error);
+    next(error);
   }
+});
 
-  res.status(200).json({
-    success: true,
-    data: user
-  });
+// @desc    Create user
+// @route   POST /api/v1/users
+// @access   Private/Admin
+export const createUser = asyncHandler(async (req, res, next) => {
+  try {
+    const newUser = {
+      _id: `user_${Date.now()}`,
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    mockUsers.push(newUser);
+    
+    res.status(201).json({
+      success: true,
+      data: newUser
+    });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    next(error);
+  }
+});
+
+// @desc    Get all users
+// @route   GET /api/v1/users
+// @access   Private/Admin
+export const getUsers = asyncHandler(async (req, res, next) => {
+  try {
+    res.status(200).json({
+      success: true,
+      count: mockUsers.length,
+      data: mockUsers
+    });
+  } catch (error) {
+    console.error('Error getting users:', error);
+    next(error);
+  }
 });

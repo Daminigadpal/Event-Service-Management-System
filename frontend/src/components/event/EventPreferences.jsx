@@ -101,7 +101,7 @@ const EventPreferences = () => {
     e.preventDefault();
     try {
       if (isEditing && currentPreference.id) {
-        await updateEventPreference(currentPreference.id, currentPreference);
+        await updateEventPreference(currentPreference);
         toast.success('Event preference updated successfully');
       } else {
         // Try to create first, if it fails with 400, try to update the first existing preference

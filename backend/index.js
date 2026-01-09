@@ -13,6 +13,7 @@ import eventPreferenceRoutes from "./src/routes/eventPreferenceRoutes.js";
 import staffAvailabilityRoutes from "./src/routes/staffAvailabilityRoutes.js";
 import eventReminderRoutes from "./src/routes/eventReminderRoutes.js";
 import paymentRoutes from "./src/routes/paymentRoutes.js";
+import servicePackageRoutes from "./src/routes/servicePackageRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +36,7 @@ app.use("/api/v1/event-preferences", eventPreferenceRoutes);
 app.use("/api/v1/staff-availability", staffAvailabilityRoutes);
 app.use("/api/v1/event-reminders", eventReminderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/service-packages", servicePackageRoutes); // Added route
 
 // Basic route for testing
 app.get("/", (req, res) => {

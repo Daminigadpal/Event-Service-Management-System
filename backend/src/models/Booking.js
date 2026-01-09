@@ -120,14 +120,6 @@ bookingSchema.virtual('daysUntilEvent').get(function() {
   return diffDays;
 });
 
-// Pre-save hook to validate staff assignment
-// Pre-save hook to validate staff assignment
-// Pre-save hook to validate staff assignment
-// bookingSchema.pre('save', function(next) {
-//   // Staff validation is optional - skip if not assigned
-//   next();
-// });
-
 // Static method to find bookings by customer
 bookingSchema.statics.findByCustomer = function(customerId) {
   return this.find({ customer: customerId })
