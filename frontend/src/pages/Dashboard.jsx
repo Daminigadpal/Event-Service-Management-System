@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 // Mock data - replace with actual API calls
 const mockData = {
@@ -26,8 +27,9 @@ const mockData = {
   ],
 };
 
-function Dashboard({ onLogout }) {
+function Dashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
 
@@ -52,7 +54,7 @@ function Dashboard({ onLogout }) {
   }, []);
 
   const handleLogout = () => {
-    onLogout();
+    logout();
     navigate('/login');
   };
 
@@ -72,7 +74,13 @@ function Dashboard({ onLogout }) {
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900">Event Management Dashboard</h1>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/service-management')}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Service Management
+              </button>
               <button
                 onClick={handleLogout}
                 className="ml-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

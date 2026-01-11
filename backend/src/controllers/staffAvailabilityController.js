@@ -1,7 +1,7 @@
 // backend/src/controllers/staffAvailabilityController.js
-import StaffAvailability from '../models/StaffAvailability.js';
-import Booking from '../models/Booking.js';
-import ErrorResponse from '../utils/errorResponse.js';
+const StaffAvailability = require('../models/StaffAvailability.js');
+const Booking = require('../models/Booking.js');
+const ErrorResponse = require('../utils/errorResponse.js');
 
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -9,7 +9,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @desc    Get staff availability for a specific date range
 // @route   GET /api/v1/staff-availability
 // @access  Private
-export const getStaffAvailability = asyncHandler(async (req, res, next) => {
+const getStaffAvailability = asyncHandler(async (req, res, next) => {
   const { startDate, endDate, staffId } = req.query;
   
   let query = {};
@@ -19,13 +19,16 @@ export const getStaffAvailability = asyncHandler(async (req, res, next) => {
   }
   
   if (startDate && endDate) {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
     query.date = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate)
+      $gte: new Date(startYear, startMonth - 1, startDay),
+      $lte: new Date(endYear, endMonth - 1, endDay)
     };
   } else if (startDate) {
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
     query.date = {
-      $gte: new Date(startDate)
+      $gte: new Date(startYear, startMonth - 1, startDay)
     };
   }
   
@@ -43,8 +46,11 @@ export const getStaffAvailability = asyncHandler(async (req, res, next) => {
 // @desc    Create or update staff availability
 // @route   POST /api/v1/staff-availability
 // @access  Private/Admin/Staff
-export const setStaffAvailability = asyncHandler(async (req, res, next) => {
-  const { staff, date, timeSlots, status, notes } = req.body;
+const setStaffAvailability = async (req, res, next) => {
+  try {
+    console.log('🔄 Processing staff availability request');
+    const { staff, date, timeSlots, status, notes } = req.body;
+    console.log('📋 Request data:', { staff, date, timeSlots, status, notes });
   
   // Validate time slots
   if (timeSlots && timeSlots.length > 0) {
@@ -66,8 +72,10 @@ export const setStaffAvailability = asyncHandler(async (req, res, next) => {
     }
   }
   
-  // Check if availability already exists for this staff and date
-  const existingAvailability = await StaffAvailability.findOne({ staff, date });
+  // Parse date correctly to avoid timezone issues
+  const [year, month, day] = date.split('-').map(Number);
+  const targetDate = new Date(year, month - 1, day); // month is 0-indexed
+  const existingAvailability = await StaffAvailability.findOne({ staff, date: targetDate });
   
   let availability;
   
@@ -77,31 +85,41 @@ export const setStaffAvailability = asyncHandler(async (req, res, next) => {
       existingAvailability._id,
       { timeSlots, status, notes },
       { new: true, runValidators: true }
-    ).populate('staff', 'name email');
+    );
+    // Skip populate for now
+    // .populate('staff', 'name email');
   } else {
     // Create new availability
     availability = await StaffAvailability.create({
       staff,
-      date,
+      date: targetDate,
       timeSlots: timeSlots || [],
       status: status || 'available',
       notes
     });
-    
-    await availability.populate('staff', 'name email');
+
+    // Skip populate for now to test
+    // await availability.populate('staff', 'name email');
   }
   
-  res.status(201).json({
-    success: true,
-    message: 'Staff availability set successfully',
-    data: availability
-  });
-});
+    res.status(201).json({
+      success: true,
+      message: 'Staff availability set successfully',
+      data: availability
+    });
+  } catch (error) {
+    console.error('❌ Error in setStaffAvailability:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while setting availability'
+    });
+  }
+};
 
 // @desc    Check for booking conflicts
 // @route   POST /api/v1/staff-availability/check-conflicts
 // @access  Private
-export const checkBookingConflicts = asyncHandler(async (req, res, next) => {
+const checkBookingConflicts = asyncHandler(async (req, res, next) => {
   const { date, startTime, endTime, excludeBookingId } = req.body;
   
   if (!date || !startTime || !endTime) {
@@ -165,13 +183,16 @@ export const checkBookingConflicts = asyncHandler(async (req, res, next) => {
 // @desc    Get daily schedule for a specific date
 // @route   GET /api/v1/staff-availability/schedule/:date
 // @access  Private
-export const getDailySchedule = asyncHandler(async (req, res, next) => {
+const getDailySchedule = asyncHandler(async (req, res, next) => {
   const { date } = req.params;
   const { staffId } = req.query;
   
-  const targetDate = new Date(date);
-  const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+  const [year, month, day] = date.split('-').map(Number);
+  const targetDate = new Date(year, month - 1, day);
+  const startOfDay = new Date(targetDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(targetDate);
+  endOfDay.setHours(23, 59, 59, 999);
   
   // Get bookings for the day
   let bookingQuery = {
@@ -220,7 +241,7 @@ export const getDailySchedule = asyncHandler(async (req, res, next) => {
 // @desc    Delete staff availability
 // @route   DELETE /api/v1/staff-availability/:id
 // @access  Private/Admin/Staff (own)
-export const deleteStaffAvailability = asyncHandler(async (req, res, next) => {
+const deleteStaffAvailability = asyncHandler(async (req, res, next) => {
   const availability = await StaffAvailability.findById(req.params.id);
   
   if (!availability) {
@@ -240,3 +261,11 @@ export const deleteStaffAvailability = asyncHandler(async (req, res, next) => {
     data: {}
   });
 });
+
+module.exports = {
+  getStaffAvailability,
+  setStaffAvailability,
+  checkBookingConflicts,
+  getDailySchedule,
+  deleteStaffAvailability
+};

@@ -1,5 +1,5 @@
 // models/Payment.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
   booking: {
@@ -60,30 +60,6 @@ paymentSchema.index({ user: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ paymentDate: -1 });
 
-// Update booking payment status when payment is completed
-paymentSchema.post('save', async function() {
-  const Booking = await import('./Booking.js');
-  
-  if (this.status === 'paid') {
-    const booking = await Booking.default.findById(this.booking);
-    const payments = await this.constructor.find({ 
-      booking: this.booking,
-      status: 'paid'
-    });
-    
-    const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
-    booking.advancePaid = totalPaid;
-    
-    if (totalPaid >= booking.totalAmount) {
-      booking.paymentStatus = 'paid';
-    } else if (totalPaid > 0) {
-      booking.paymentStatus = 'partially_paid';
-    }
-    
-    await booking.save();
-  }
-});
-
 const Payment = mongoose.model('Payment', paymentSchema);
 
-export default Payment;
+module.exports = Payment;

@@ -1,6 +1,6 @@
 // backend/src/controllers/serviceController.js
-import Service from '../models/Service.js';
-import ErrorResponse from '../utils/errorResponse.js';
+const Service = require('../models/Service.js');
+const ErrorResponse = require('../utils/errorResponse.js');
 
 // Mock data for testing without MongoDB
 const mockServices = [
@@ -26,7 +26,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @desc    Get all services
 // @route   GET /api/v1/services
 // @access  Public
-export const getServices = async (req, res, next) => {
+const getServices = async (req, res, next) => {
   // Return mock services for testing
   res.status(200).json({ 
     success: true, 
@@ -38,7 +38,7 @@ export const getServices = async (req, res, next) => {
 // @desc    Create service
 // @route   POST /api/v1/services
 // @access  Private/Admin
-export const createService = async (req, res, next) => {
+const createService = async (req, res, next) => {
   try {
     const service = await Service.create(req.body);
     res.status(201).json({ success: true, data: service });
@@ -50,7 +50,7 @@ export const createService = async (req, res, next) => {
 // @desc    Update service
 // @route   PUT /api/v1/services/:id
 // @access  Private/Admin
-export const updateService = async (req, res, next) => {
+const updateService = async (req, res, next) => {
   try {
     const service = await Service.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -68,7 +68,7 @@ export const updateService = async (req, res, next) => {
 // @desc    Delete service
 // @route   DELETE /api/v1/services/:id
 // @access  Private/Admin
-export const deleteService = async (req, res, next) => {
+const deleteService = async (req, res, next) => {
   try {
     const service = await Service.findByIdAndDelete(req.params.id);
     if (!service) {
@@ -78,4 +78,11 @@ export const deleteService = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+module.exports = {
+  getServices,
+  createService,
+  updateService,
+  deleteService
 };

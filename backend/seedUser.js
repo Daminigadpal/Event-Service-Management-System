@@ -12,8 +12,8 @@ const seedUser = async () => {
     const { default: User } = await import("./src/models/User.js");
 
     // Check if user exists
-    const existingUser = await User.findOne({ email: "ram@gmail.com" });
-    
+    const existingUser = await User.findOne({ email: "staff@gmail.com" });
+
     if (existingUser) {
       console.log('User already exists');
       await mongoose.disconnect();
@@ -22,10 +22,10 @@ const seedUser = async () => {
 
     // Create new user
     const user = await User.create({
-      name: "Ram",
-      email: "ram@gmail.com",
-      password: "ram123",
-      role: "user"
+      name: "Staff Member",
+      email: "staff@gmail.com",
+      password: "staff123",
+      role: "staff"
     });
 
     console.log('User created successfully:', {

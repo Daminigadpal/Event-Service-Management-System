@@ -1,7 +1,7 @@
 // backend/src/controllers/eventReminderController.js
-import EventReminder from '../models/EventReminder.js';
-import Booking from '../models/Booking.js';
-import ErrorResponse from '../utils/errorResponse.js';
+const EventReminder = require('../models/EventReminder.js');
+const Booking = require('../models/Booking.js');
+const ErrorResponse = require('../utils/errorResponse.js');
 
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -9,7 +9,7 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @desc    Get reminders for a user
 // @route   GET /api/v1/event-reminders
 // @access  Private
-export const getReminders = asyncHandler(async (req, res, next) => {
+const getReminders = asyncHandler(async (req, res, next) => {
   let query = {};
   
   // Customers can only see their own reminders
@@ -45,7 +45,7 @@ export const getReminders = asyncHandler(async (req, res, next) => {
 // @desc    Create event reminder
 // @route   POST /api/v1/event-reminders
 // @access  Private
-export const createReminder = asyncHandler(async (req, res, next) => {
+const createReminder = asyncHandler(async (req, res, next) => {
   const { booking, reminderType, reminderTime, message } = req.body;
   
   // Validate required fields
@@ -91,7 +91,7 @@ export const createReminder = asyncHandler(async (req, res, next) => {
 // @desc    Create automatic reminders for a booking
 // @route   POST /api/v1/event-reminders/automatic
 // @access  Private
-export const createAutomaticReminders = asyncHandler(async (req, res, next) => {
+const createAutomaticReminders = asyncHandler(async (req, res, next) => {
   const { bookingId } = req.body;
   
   if (!bookingId) {
@@ -169,7 +169,7 @@ export const createAutomaticReminders = asyncHandler(async (req, res, next) => {
 // @desc    Update reminder status (mark as sent)
 // @route   PUT /api/v1/event-reminders/:id/status
 // @access  Private
-export const updateReminderStatus = asyncHandler(async (req, res, next) => {
+const updateReminderStatus = asyncHandler(async (req, res, next) => {
   const { status, error: errorMessage } = req.body;
   
   if (!status || !['pending', 'sent', 'failed'].includes(status)) {
@@ -212,7 +212,7 @@ export const updateReminderStatus = asyncHandler(async (req, res, next) => {
 // @desc    Delete reminder
 // @route   DELETE /api/v1/event-reminders/:id
 // @access  Private
-export const deleteReminder = asyncHandler(async (req, res, next) => {
+const deleteReminder = asyncHandler(async (req, res, next) => {
   const reminder = await EventReminder.findById(req.params.id);
   
   if (!reminder) {
@@ -236,7 +236,7 @@ export const deleteReminder = asyncHandler(async (req, res, next) => {
 // @desc    Get pending reminders (for cron job)
 // @route   GET /api/v1/event-reminders/pending
 // @access  Private/Admin
-export const getPendingReminders = asyncHandler(async (req, res, next) => {
+const getPendingReminders = asyncHandler(async (req, res, next) => {
   const now = new Date();
   
   const pendingReminders = await EventReminder.find({
@@ -253,3 +253,12 @@ export const getPendingReminders = asyncHandler(async (req, res, next) => {
     data: pendingReminders
   });
 });
+
+module.exports = {
+  getReminders,
+  createReminder,
+  createAutomaticReminders,
+  updateReminderStatus,
+  deleteReminder,
+  getPendingReminders
+};

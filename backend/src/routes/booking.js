@@ -1,7 +1,7 @@
 // backend/src/routes/booking.js
-import express from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import {
+const express = require('express');
+const { protect, authorize } = require('../middleware/auth.js');
+const {
   getBookings,
   getBooking,
   createBooking,
@@ -12,7 +12,7 @@ import {
   updateBookingStatus,
   cancelBooking,
   deleteBooking
-} from '../controllers/bookingController.js';
+} = require('../controllers/bookingController.js');
 
 const router = express.Router();
 
@@ -39,4 +39,4 @@ router.put('/:id/cancel', cancelBooking);
 // Staff assignment
 router.put('/:id/assign-staff', authorize('admin'), assignStaffToBooking);
 
-export default router;
+module.exports = router;

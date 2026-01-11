@@ -1,12 +1,16 @@
-// backend/src/routes/auth.js
-import express from 'express';
-import { login, register, getMe, logout } from '../controllers/authController.js';
+const express = require('express');
+const { login, register, getMe, logout } = require('../controllers/authController.js');
+const { protect } = require("../middleware/auth.js");
 
 const router = express.Router();
 
-router.post('/login', login);
-router.post('/register', register);
-router.get('/me', getMe);
-router.get('/logout', logout);
+// 🔓 Public routes
+router.post("/login", login);
+router.post("/register", register);
+// role comes from request body: user | staff | admin
 
-export default router;
+// 🔐 Protected routes
+router.get("/me", protect, getMe);
+router.get("/logout", protect, logout);
+
+module.exports = router;

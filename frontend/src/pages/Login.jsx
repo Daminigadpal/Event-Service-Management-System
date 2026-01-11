@@ -1,6 +1,6 @@
 // In frontend/src/pages/Login.jsx
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 
 const Login = () => {
@@ -26,8 +26,17 @@ const Login = () => {
       console.log('Login success:', true);
       console.log('User data from response:', userData);
       
-      console.log('Navigating to dashboard');
-      navigate('/dashboard',{replace:true});
+      // Navigate based on user role
+      if (userData.role === 'admin') {
+        console.log('Navigating to admin dashboard');
+        navigate('/admin/dashboard', {replace:true});
+      } else if (userData.role === 'event_manager' || userData.role === 'staff') {
+        console.log('Navigating to staff dashboard');
+        navigate('/staff/dashboard', {replace:true});
+      } else {
+        console.log('Navigating to user dashboard');
+        navigate('/dashboard', {replace:true});
+      }
       console.log('Navigation called');
     } catch (error) {
       console.error('Login error:', error.response?.data?.message || error.message);
@@ -35,11 +44,16 @@ const Login = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type="email" name="email" placeholder="Email" required />
-      <input type="password" name="password" placeholder="Password" required />
-      <button type="submit">Login</button>
-    </form>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+      <p>
+        Don't have an account? <Link to="/register">Register here</Link>
+      </p>
+    </div>
   );
 };
 

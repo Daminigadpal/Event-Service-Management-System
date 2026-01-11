@@ -1,13 +1,13 @@
 // frontend/src/components/scheduling/AvailabilityCalendar.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Button, 
-  Typography, 
-  Paper, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
+import {
+  Box,
+  Button,
+  Typography,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   TextField,
   Select,
@@ -21,7 +21,7 @@ import {
   Card,
   CardContent
 } from '@mui/material';
-import { 
+import {
   CalendarMonth as CalendarIcon,
   AccessTime as TimeIcon,
   Person as PersonIcon,
@@ -31,13 +31,15 @@ import {
   ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import { 
-  getStaffAvailability, 
-  setStaffAvailability, 
-  getDailySchedule 
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  getStaffAvailability,
+  setStaffAvailability,
+  getDailySchedule
 } from '../../services/staffAvailabilityService';
 
-const AvailabilityCalendar = () => {
+const AvailabilityCalendar = ({ readOnly = false }) => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [availabilityData, setAvailabilityData] = useState([]);
   const [dailySchedule, setDailySchedule] = useState(null);
@@ -60,15 +62,15 @@ const AvailabilityCalendar = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
       const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-      
+
       const response = await getStaffAvailability({
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0]
       });
-      
+
       if (response.success) {
         setAvailabilityData(response.data);
       }
@@ -97,8 +99,9 @@ const AvailabilityCalendar = () => {
   };
 
   const handleOpenDialog = () => {
+    if (readOnly) return;
     setFormData({
-      staff: '',
+      staff: user?.id || '',
       date: selectedDate.toISOString().split('T')[0],
       timeSlots: [{ startTime: '09:00', endTime: '17:00', isAvailable: true }],
       status: 'available',
@@ -128,7 +131,7 @@ const AvailabilityCalendar = () => {
   const handleTimeSlotChange = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      timeSlots: prev.timeSlots.map((slot, i) => 
+      timeSlots: prev.timeSlots.map((slot, i) =>
         i === index ? { ...slot, [field]: value } : slot
       )
     }));
@@ -153,7 +156,7 @@ const AvailabilityCalendar = () => {
 
   const getAvailabilityForDate = (date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return availabilityData.find(avail => 
+    return availabilityData.find(avail =>
       new Date(avail.date).toISOString().split('T')[0] === dateStr
     );
   };
@@ -163,19 +166,19 @@ const AvailabilityCalendar = () => {
     const month = selectedDate.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     const calendarDays = [];
-    
+
     // Add empty cells for days before month starts
     for (let i = 0; i < firstDay; i++) {
       calendarDays.push(null);
     }
-    
+
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       calendarDays.push(new Date(year, month, day));
     }
-    
+
     return (
       <Grid container spacing={1} sx={{ mb: 2 }}>
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -185,12 +188,12 @@ const AvailabilityCalendar = () => {
             </Typography>
           </Grid>
         ))}
-        
+
         {calendarDays.map((day, index) => {
           if (!day) {
             return <Grid item xs={12/7} key={`empty-${index}`} />;
           }
-          
+
           const availability = getAvailabilityForDate(day);
           let color = 'default';
           let icon = null;
@@ -224,11 +227,11 @@ const AvailabilityCalendar = () => {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   border: isToday ? '2px solid blue' : '1px solid #ddd',
-                  backgroundColor: color === 'success' ? '#e8f5e8' : 
-                                 color === 'error' ? '#ffebee' : '#f5f5f5',
+                  backgroundColor: color === 'success' ? '#e8f5e8' :
+                                  color === 'error' ? '#ffebee' : '#f5f5f5',
                   '&:hover': {
-                    backgroundColor: color === 'success' ? '#c8e6c9' : 
-                                   color === 'error' ? '#ffcdd2' : '#e0e0e0'
+                    backgroundColor: color === 'success' ? '#c8e6c9' :
+                                    color === 'error' ? '#ffcdd2' : '#e0e0e0'
                   }
                 }}
                 onClick={() => handleDateClick(day)}
@@ -301,15 +304,17 @@ const AvailabilityCalendar = () => {
                   Next
                 </Button>
               </Box>
-              <Button
-                variant="contained"
-                startIcon={<CalendarIcon />}
-                onClick={handleOpenDialog}
-              >
-                Set Availability
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="contained"
+                  startIcon={<CalendarIcon />}
+                  onClick={handleOpenDialog}
+                >
+                  Set Availability
+                </Button>
+              )}
             </Box>
-            
+
             {renderCalendar()}
           </Paper>
         </Grid>
@@ -320,13 +325,13 @@ const AvailabilityCalendar = () => {
             <Typography variant="h6" mb={2}>
               Daily Schedule - {selectedDate.toLocaleDateString()}
             </Typography>
-            
+
             {dailySchedule ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" mb={2}>
                   Total Bookings: {dailySchedule.summary.totalBookings}
                 </Typography>
-                
+
                 {dailySchedule.bookings.length > 0 ? (
                   dailySchedule.bookings.map((booking, index) => (
                     <Box key={booking._id} sx={{ mb: 2, p: 1, border: '1px solid #ddd', borderRadius: 1 }}>
@@ -339,9 +344,9 @@ const AvailabilityCalendar = () => {
                       <Typography variant="caption" display="block">
                         Time: {new Date(booking.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
-                      <Chip 
-                        label={booking.status} 
-                        size="small" 
+                      <Chip
+                        label={booking.status}
+                        size="small"
                         color={booking.status === 'confirmed' ? 'success' : 'default'}
                         sx={{ mt: 1 }}
                       />
@@ -362,91 +367,93 @@ const AvailabilityCalendar = () => {
         </Grid>
       </Grid>
 
-      {/* Set Availability Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Set Staff Availability</DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <TextField
-                label="Date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                required
-                InputLabelProps={{ shrink: true }}
-              />
-              
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                  label="Status"
-                >
-                  <MenuItem value="available">Available</MenuItem>
-                  <MenuItem value="busy">Busy</MenuItem>
-                  <MenuItem value="off">Off</MenuItem>
-                </Select>
-              </FormControl>
+      {/* Set Availability Dialog - Only show if not readOnly */}
+      {!readOnly && (
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+          <DialogTitle>Set Staff Availability</DialogTitle>
+          <form onSubmit={handleSubmit}>
+            <DialogContent>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+                <TextField
+                  label="Date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  required
+                  InputLabelProps={{ shrink: true }}
+                />
 
-              <Box>
-                <Typography variant="subtitle1" mb={1}>
-                  Time Slots
-                </Typography>
-                {formData.timeSlots.map((slot, index) => (
-                  <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                    <TextField
-                      label="Start Time"
-                      type="time"
-                      value={slot.startTime}
-                      onChange={(e) => handleTimeSlotChange(index, 'startTime', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField
-                      label="End Time"
-                      type="time"
-                      value={slot.endTime}
-                      onChange={(e) => handleTimeSlotChange(index, 'endTime', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => handleRemoveTimeSlot(index)}
-                      color="error"
-                      variant="outlined"
-                    >
-                      Remove
-                    </Button>
-                  </Box>
-                ))}
-                <Button
-                  type="button"
-                  onClick={handleAddTimeSlot}
-                  variant="outlined"
-                  sx={{ mt: 1 }}
-                >
-                  Add Time Slot
-                </Button>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={formData.status}
+                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                    label="Status"
+                  >
+                    <MenuItem value="available">Available</MenuItem>
+                    <MenuItem value="busy">Busy</MenuItem>
+                    <MenuItem value="off">Off</MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Box>
+                  <Typography variant="subtitle1" mb={1}>
+                    Time Slots
+                  </Typography>
+                  {formData.timeSlots.map((slot, index) => (
+                    <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
+                      <TextField
+                        label="Start Time"
+                        type="time"
+                        value={slot.startTime}
+                        onChange={(e) => handleTimeSlotChange(index, 'startTime', e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <TextField
+                        label="End Time"
+                        type="time"
+                        value={slot.endTime}
+                        onChange={(e) => handleTimeSlotChange(index, 'endTime', e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => handleRemoveTimeSlot(index)}
+                        color="error"
+                        variant="outlined"
+                      >
+                        Remove
+                      </Button>
+                    </Box>
+                  ))}
+                  <Button
+                    type="button"
+                    onClick={handleAddTimeSlot}
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                  >
+                    Add Time Slot
+                  </Button>
+                </Box>
+
+                <TextField
+                  label="Notes"
+                  multiline
+                  rows={3}
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                />
               </Box>
-
-              <TextField
-                label="Notes"
-                multiline
-                rows={3}
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={loading}>
-              {loading ? 'Saving...' : 'Save Availability'}
-            </Button>
-          </DialogActions>
-        </form>
-      </Dialog>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={loading}>
+                {loading ? 'Saving...' : 'Save Availability'}
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      )}
     </Box>
   );
 };

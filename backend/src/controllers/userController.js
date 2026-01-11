@@ -1,54 +1,44 @@
 // backend/src/controllers/userController.js
-import ErrorResponse from '../utils/errorResponse.js';
+const ErrorResponse = require('../utils/errorResponse.js');
+const User = require('../models/User.js');
 
 // Add asyncHandler directly in this file
-const asyncHandler = (fn) => (req, res, next) => {
+const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-// Mock user data for testing without MongoDB
-let mockUsers = [
-  {
-    _id: '69607e6cc3465f9a8169107d',
-    name: 'Ram',
-    email: 'ram@gmail.com',
-    phone: '12345678',
-    address: '',
-    role: 'user',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
 
 // @desc    Update user profile
 // @route   PUT /api/v1/users/profile
 // @access   Private
-export const updateProfile = asyncHandler(async (req, res, next) => {
+const updateProfile = asyncHandler(async (req, res, next) => {
   try {
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, role, department, skills } = req.body;
     
     console.log('Updating profile for user:', req.user.id);
-    console.log('Update data:', { name, email, phone, address });
+    console.log('Update data:', { name, email, phone, address, role, department, skills });
     
-    // Find user in mock data
-    const userIndex = mockUsers.findIndex(user => user._id === req.user.id);
+    // Find user in MongoDB
+    const user = await User.findById(req.user.id);
     
-    if (userIndex === -1) {
+    if (!user) {
       console.log('User not found with id:', req.user.id);
       return next(new ErrorResponse('User not found', 404));
     }
     
-    // Update user in mock data
-    const updatedUser = {
-      ...mockUsers[userIndex],
-      name: name || mockUsers[userIndex].name,
-      email: email || mockUsers[userIndex].email,
-      phone: phone || mockUsers[userIndex].phone,
-      address: address || mockUsers[userIndex].address,
-      updatedAt: new Date()
-    };
-    
-    mockUsers[userIndex] = updatedUser;
+    // Update user in MongoDB
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        name: name || user.name,
+        email: email || user.email,
+        phone: phone || user.phone,
+        address: address || user.address,
+        role: role || user.role,
+        department: department || user.department,
+        skills: skills || user.skills,
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
     
     console.log('Successfully updated user:', updatedUser);
     
@@ -66,12 +56,12 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
 // @desc    Get user profile
 // @route   GET /api/v1/users/profile
 // @access   Private
-export const getProfile = asyncHandler(async (req, res, next) => {
+const getProfile = asyncHandler(async (req, res, next) => {
   try {
     console.log('Getting profile for user:', req.user.id);
     
-    // Find user in mock data
-    const user = mockUsers.find(user => user._id === req.user.id);
+    // Find user in MongoDB
+    const user = await User.findById(req.user.id);
     
     if (!user) {
       console.log('User not found with id:', req.user.id);
@@ -93,16 +83,15 @@ export const getProfile = asyncHandler(async (req, res, next) => {
 // @desc    Create user
 // @route   POST /api/v1/users
 // @access   Private/Admin
-export const createUser = asyncHandler(async (req, res, next) => {
+const createUser = asyncHandler(async (req, res, next) => {
   try {
-    const newUser = {
-      _id: `user_${Date.now()}`,
+    const newUser = await User.create({
       ...req.body,
       createdAt: new Date(),
       updatedAt: new Date()
-    };
+    });
     
-    mockUsers.push(newUser);
+    console.log('User created successfully:', newUser);
     
     res.status(201).json({
       success: true,
@@ -117,15 +106,27 @@ export const createUser = asyncHandler(async (req, res, next) => {
 // @desc    Get all users
 // @route   GET /api/v1/users
 // @access   Private/Admin
-export const getUsers = asyncHandler(async (req, res, next) => {
+const getUsers = asyncHandler(async (req, res, next) => {
   try {
+    // Get all users from MongoDB
+    const users = await User.find({});
+    
+    console.log('Found users:', users.length);
+    
     res.status(200).json({
       success: true,
-      count: mockUsers.length,
-      data: mockUsers
+      count: users.length,
+      data: users
     });
   } catch (error) {
     console.error('Error getting users:', error);
     next(error);
   }
 });
+
+module.exports = {
+  updateProfile,
+  getProfile,
+  createUser,
+  getUsers
+};

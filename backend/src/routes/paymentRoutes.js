@@ -1,5 +1,5 @@
-import express from 'express';
-import {
+const express = require('express');
+const {
   getPayments,
   createPayment,
   generateQuotation,
@@ -7,9 +7,9 @@ import {
   createInvoice,
   updatePaymentStatus,
   getPaymentSummary
-} from '../controllers/paymentController.js';
-import { protect, authorize } from '../middleware/auth.js';
-import Payment from '../models/Payment.js';
+} = require('../controllers/paymentController.js');
+const { protect, authorize } = require('../middleware/auth.js');
+const Payment = require('../models/Payment.js');
 
 const router = express.Router();
 
@@ -56,4 +56,4 @@ router.delete('/:id', authorize('admin'), (req, res) => {
     .catch(err => res.status(400).json({ success: false, error: err.message }));
 });
 
-export default router;
+module.exports = router;

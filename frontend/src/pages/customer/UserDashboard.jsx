@@ -1,7 +1,7 @@
 // frontend/src/pages/customer/UserDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Tabs, Tab, Typography, 
+import {
+  Box, Tabs, Tab, Typography,
   Container, CircularProgress, Alert,
   Card, CardContent, TextField, Button
 } from '@mui/material';
@@ -11,6 +11,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import BookingManagement from '../../components/booking/BookingManagement';
 import EventPreferences from '../../components/event/EventPreferences';
 import PaymentManagement from '../../components/payment/PaymentManagement';
+import ServiceManagement from '../../components/service/ServiceManagement';
+import AvailabilityCalendar from '../../components/scheduling/AvailabilityCalendar';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -81,8 +83,8 @@ const UserDashboard = () => {
       {/* Header with logout button */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Dashboard</Typography>
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           color="error"
           onClick={handleLogout}
         >
@@ -90,13 +92,14 @@ const UserDashboard = () => {
         </Button>
       </Box>
 
-      <Tabs 
-        value={activeTab} 
-        onChange={handleTabChange} 
+      <Tabs
+        value={activeTab}
+        onChange={handleTabChange}
         aria-label="dashboard tabs"
         sx={{ mb: 3 }}
       >
         <Tab label="Profile" />
+        <Tab label="🛠️ Service & Package Management" />
         <Tab label="My Bookings" />
         <Tab label="Event Preferences" />
         <Tab label="💳 Payments" />
@@ -109,14 +112,14 @@ const UserDashboard = () => {
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h5">Profile Information</Typography>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={() => setIsEditing(!isEditing)}
               >
                 {isEditing ? 'Cancel' : 'Edit Profile'}
               </Button>
             </Box>
-            
+
             <Box component="form" onSubmit={handleSaveProfile} sx={{ mt: 2 }}>
               <TextField
                 fullWidth
@@ -159,12 +162,12 @@ const UserDashboard = () => {
                 onChange={handleInputChange}
                 disabled={!isEditing}
               />
-              
+
               {isEditing && (
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button 
-                    type="submit" 
-                    variant="contained" 
+                  <Button
+                    type="submit"
+                    variant="contained"
                     color="primary"
                     sx={{ mr: 1 }}
                   >
@@ -177,23 +180,22 @@ const UserDashboard = () => {
         </Card>
       )}
 
-      {activeTab === 1 && <BookingManagement />}
-      {activeTab === 2 && <EventPreferences />}
-      {activeTab === 3 && <PaymentManagement />}
-      {activeTab === 4 && (
+      {activeTab === 1 && (
         <Card>
-          <CardContent>
-            <Typography variant="h5">Availability Calendar</Typography>
-            <Typography variant="body2">
-              This is the Availability Calendar component. The full calendar with staff scheduling features will be displayed here.
-            </Typography>
-            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2">📅 Calendar features coming soon...</Typography>
-            </Box>
+          <CardContent sx={{ p: 0 }}>
+            <ServiceManagement />
           </CardContent>
         </Card>
       )}
+      {activeTab === 2 && <BookingManagement />}
+      {activeTab === 3 && <EventPreferences />}
+      {activeTab === 4 && <PaymentManagement />}
       {activeTab === 5 && (
+        <Box>
+          <AvailabilityCalendar readOnly={true} />
+        </Box>
+      )}
+      {activeTab === 6 && (
         <Card>
           <CardContent>
             <Typography variant="h5">Schedule View</Typography>

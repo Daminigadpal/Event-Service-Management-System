@@ -1,5 +1,5 @@
 // backend/src/models/Service.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const ServiceSchema = new mongoose.Schema({
   name: {
@@ -33,4 +33,4 @@ const ServiceSchema = new mongoose.Schema({
   }
 });
 
-export default mongoose.model('Service', ServiceSchema);
+module.exports = mongoose.model('Service', ServiceSchema);

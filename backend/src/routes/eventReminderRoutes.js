@@ -1,14 +1,14 @@
 // backend/src/routes/eventReminderRoutes.js
-import express from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import {
+const express = require('express');
+const { protect, authorize } = require('../middleware/auth.js');
+const {
   getReminders,
   createReminder,
   createAutomaticReminders,
   updateReminderStatus,
   deleteReminder,
   getPendingReminders
-} from '../controllers/eventReminderController.js';
+} = require('../controllers/eventReminderController.js');
 
 const router = express.Router();
 
@@ -33,4 +33,4 @@ router.delete('/:id', deleteReminder);
 // Get pending reminders (for cron job - admin only)
 router.get('/pending', authorize('admin'), getPendingReminders);
 
-export default router;
+module.exports = router;

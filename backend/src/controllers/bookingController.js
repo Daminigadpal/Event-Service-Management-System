@@ -1,42 +1,8 @@
 // backend/src/controllers/bookingController.js
-import Booking from '../models/Booking.js';
-import Service from '../models/Service.js';
-import User from '../models/User.js';
-import ErrorResponse from '../utils/errorResponse.js';
-
-// Mock data for testing without MongoDB
-let mockBookings = [
-  {
-    _id: 'booking_1',
-    eventType: 'Wedding',
-    eventDate: new Date('2024-06-15'),
-    eventLocation: 'Delhi',
-    status: 'confirmed',
-    customer: '69607e6cc3465f9a8169107d',
-    service: {
-      _id: 'service_1',
-      name: 'Wedding Package',
-      description: 'Complete wedding decoration and catering',
-      price: 40000,
-      duration: 8
-    }
-  },
-  {
-    _id: 'booking_2',
-    eventType: 'Birthday Party',
-    eventDate: new Date('2024-07-20'),
-    eventLocation: 'Mumbai',
-    status: 'pending',
-    customer: '69607e6cc3465f9a8169107d',
-    service: {
-      _id: 'service_2',
-      name: 'Birthday Party Package',
-      description: 'Complete birthday party arrangement',
-      price: 25000,
-      duration: 4
-    }
-  }
-];
+const Booking = require('../models/Booking.js');
+const Service = require('../models/Service.js');
+const User = require('../models/User.js');
+const ErrorResponse = require('../utils/errorResponse.js');
 
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -44,19 +10,24 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @desc    Get all bookings (Admin) or user's bookings (Customer/Staff)
 // @route   GET /api/v1/bookings
 // @access  Private
-export const getBookings = asyncHandler(async (req, res, next) => {
-  // Return mock bookings for testing
+const getBookings = asyncHandler(async (req, res, next) => {
+  // Return user's bookings
+  const bookings = await Booking.find({ customer: req.user.id })
+    .populate('service', 'name description price duration')
+    .populate('staffAssigned', 'name email phone')
+    .sort({ eventDate: 1 });
+
   res.status(200).json({
     success: true,
-    data: mockBookings,
-    count: mockBookings.length
+    data: bookings,
+    count: bookings.length
   });
 });
 
 // @desc    Get single booking
 // @route   GET /api/v1/bookings/:id
 // @access  Private
-export const getBooking = asyncHandler(async (req, res, next) => {
+const getBooking = asyncHandler(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id)
     .populate('service')
     .populate('customer', 'name email phone')
@@ -67,7 +38,7 @@ export const getBooking = asyncHandler(async (req, res, next) => {
   }
 
   // Check authorization
-  if (booking.customer._id.toString() !== req.user.id && 
+  if (booking.customer._id.toString() !== req.user.id &&
       booking.staffAssigned?._id.toString() !== req.user.id &&
       req.user.role !== 'admin') {
     return next(new ErrorResponse('Not authorized to access this booking', 401));
@@ -82,7 +53,7 @@ export const getBooking = asyncHandler(async (req, res, next) => {
 // @desc    Create booking (Inquiry)
 // @route   POST /api/v1/bookings
 // @access  Private
-export const createBooking = asyncHandler(async (req, res, next) => {
+const createBooking = asyncHandler(async (req, res, next) => {
   const { service, eventType, eventDate, eventLocation, guestCount, specialRequests } = req.body;
 
   // Validate required fields
@@ -90,41 +61,29 @@ export const createBooking = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Please provide all required fields', 400));
   }
 
-  // Create mock booking
-  const newBooking = {
-    _id: `booking_${Date.now()}`,
+  // Create booking
+  const booking = await Booking.create({
     customer: req.user.id,
-    service: {
-      _id: service,
-      name: 'Wedding Package',
-      description: 'Complete wedding decoration and catering',
-      price: 40000,
-      duration: 8
-    },
+    service,
     eventType,
     eventDate: new Date(eventDate),
     eventLocation,
     guestCount: parseInt(guestCount),
     specialRequests,
-    status: 'inquiry',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
-
-  // Add to mock bookings
-  mockBookings.push(newBooking);
+    status: 'inquiry'
+  });
 
   res.status(201).json({
     success: true,
     message: 'Booking inquiry created successfully',
-    data: newBooking
+    data: booking
   });
 });
 
 // @desc    Update booking
 // @route   PUT /api/v1/bookings/:id
 // @access  Private
-export const updateBooking = asyncHandler(async (req, res, next) => {
+const updateBooking = asyncHandler(async (req, res, next) => {
   let booking = await Booking.findById(req.params.id);
 
   if (!booking) {
@@ -154,7 +113,7 @@ export const updateBooking = asyncHandler(async (req, res, next) => {
 // @desc    Send quote to customer
 // @route   PUT /api/v1/bookings/:id/quote
 // @access  Private/Admin
-export const sendQuote = asyncHandler(async (req, res, next) => {
+const sendQuote = asyncHandler(async (req, res, next) => {
   const { quotedPrice } = req.body;
 
   if (!quotedPrice) {
@@ -185,7 +144,7 @@ export const sendQuote = asyncHandler(async (req, res, next) => {
 // @desc    Confirm booking
 // @route   PUT /api/v1/bookings/:id/confirm
 // @access  Private
-export const confirmBooking = asyncHandler(async (req, res, next) => {
+const confirmBooking = asyncHandler(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id);
 
   if (!booking) {
@@ -217,7 +176,7 @@ export const confirmBooking = asyncHandler(async (req, res, next) => {
 // @desc    Assign staff to booking
 // @route   PUT /api/v1/bookings/:id/assign-staff
 // @access  Private/Admin
-export const assignStaffToBooking = asyncHandler(async (req, res, next) => {
+const assignStaffToBooking = asyncHandler(async (req, res, next) => {
   const { staffId } = req.body;
 
   if (!staffId) {
@@ -253,7 +212,7 @@ export const assignStaffToBooking = asyncHandler(async (req, res, next) => {
 // @desc    Update booking status
 // @route   PUT /api/v1/bookings/:id/status
 // @access  Private/Admin
-export const updateBookingStatus = asyncHandler(async (req, res, next) => {
+const updateBookingStatus = asyncHandler(async (req, res, next) => {
   const { status } = req.body;
 
   if (!status) {
@@ -288,7 +247,7 @@ export const updateBookingStatus = asyncHandler(async (req, res, next) => {
 // @desc    Cancel booking
 // @route   PUT /api/v1/bookings/:id/cancel
 // @access  Private
-export const cancelBooking = asyncHandler(async (req, res, next) => {
+const cancelBooking = asyncHandler(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id);
 
   if (!booking) {
@@ -319,7 +278,7 @@ export const cancelBooking = asyncHandler(async (req, res, next) => {
 // @desc    Delete booking
 // @route   DELETE /api/v1/bookings/:id
 // @access  Private/Admin/User (own bookings only)
-export const deleteBooking = asyncHandler(async (req, res, next) => {
+const deleteBooking = asyncHandler(async (req, res, next) => {
   const booking = await Booking.findById(req.params.id);
 
   if (!booking) {
@@ -339,3 +298,16 @@ export const deleteBooking = asyncHandler(async (req, res, next) => {
     data: {}
   });
 });
+
+module.exports = {
+  getBookings,
+  getBooking,
+  createBooking,
+  updateBooking,
+  sendQuote,
+  confirmBooking,
+  assignStaffToBooking,
+  updateBookingStatus,
+  cancelBooking,
+  deleteBooking
+};

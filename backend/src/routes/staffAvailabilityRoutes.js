@@ -1,13 +1,13 @@
 // backend/src/routes/staffAvailabilityRoutes.js
-import express from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import {
+const express = require('express');
+const { protect, authorize } = require('../middleware/auth.js');
+const {
   getStaffAvailability,
   setStaffAvailability,
   checkBookingConflicts,
   getDailySchedule,
   deleteStaffAvailability
-} from '../controllers/staffAvailabilityController.js';
+} = require('../controllers/staffAvailabilityController.js');
 
 const router = express.Router();
 
@@ -29,4 +29,4 @@ router.get('/schedule/:date', getDailySchedule);
 // Delete availability
 router.delete('/:id', deleteStaffAvailability);
 
-export default router;
+module.exports = router;

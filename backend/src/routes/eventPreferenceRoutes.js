@@ -1,11 +1,11 @@
 // backend/src/routes/eventPreferenceRoutes.js
-import express from 'express';
-import { protect } from '../middleware/auth.js';
-import {
+const express = require('express');
+const { protect } = require('../middleware/auth.js');
+const {
   getEventPreferences,
   createEventPreference,
   updateEventPreferences
-} from '../controllers/eventPreferenceController.js';
+} = require('../controllers/eventPreferenceController.js');
 
 const router = express.Router();
 
@@ -15,4 +15,4 @@ router
   .post(protect, createEventPreference)
   .put(protect, updateEventPreferences);
 
-export default router;
+module.exports = router;

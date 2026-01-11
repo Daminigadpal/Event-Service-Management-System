@@ -1,13 +1,25 @@
-import User from "../models/User.js";
+const User = require("../models/User.js");
+const jwt = require('jsonwebtoken');
 
-// Mock user data for testing without MongoDB
+// Mock users for testing without MongoDB
 const mockUsers = [
   {
-    _id: '69607e6cc3465f9a8169107d',
-    name: 'Ram',
-    email: 'ram@gmail.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // 'ram123' hashed
-    role: 'user'
+    _id: 'mock_staff_1',
+    name: 'Staff Member',
+    email: 'staff@gmail.com',
+    password: 'staff123',
+    role: 'staff',
+    department: 'Event Management',
+    skills: ['Photography', 'Event Setup']
+  },
+  {
+    _id: 'mock_admin_1',
+    name: 'Admin User',
+    email: 'admin@gmail.com',
+    password: 'admin123',
+    role: 'admin',
+    department: 'Administration',
+    skills: ['Management']
   }
 ];
 
@@ -18,98 +30,214 @@ const asyncHandler = (fn) => (req, res, next) =>
 //
 // @route   POST /api/v1/auth/register
 //
-export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+const register = asyncHandler(async (req, res) => {
+   const { name, email, password, role } = req.body;
 
-  // Mock registration - just return success
-  const newUser = {
-    _id: Date.now().toString(),
-    name,
-    email,
-    role: role || 'user'
-  };
+   console.log('🔥 Registration attempt received:', { name, email, role });
 
-  res.status(201).json({
-    success: true,
-    message: "User registered successfully (mock)",
-    data: newUser,
-  });
-});
+   // Validate input
+   if (!name || !email || !password) {
+     console.log('❌ Validation failed: missing name, email, or password');
+     return res.status(400).json({
+       success: false,
+       error: "Please provide name, email, and password",
+     });
+   }
+
+   try {
+     console.log('🔍 Checking if user exists...');
+     // Check if user already exists in MongoDB
+     const existingUser = await User.findOne({ email });
+     console.log('👤 Existing user check result:', existingUser ? 'Found' : 'Not found');
+     if (existingUser) {
+       console.log('❌ User already exists');
+       return res.status(400).json({
+         success: false,
+         error: "User with this email already exists",
+       });
+     }
+
+     console.log('👤 Creating new user...');
+     // Create new user in MongoDB
+     const newUser = await User.create({
+       name,
+       email,
+       password, // This will be hashed by User model pre-save hook
+       role: role || 'user',
+       department: role === 'event_manager' ? 'Event Management' : 'General',
+       skills: role === 'event_manager' ? ['Event Management', 'Planning'] : [],
+       phone: '',
+       address: ''
+     });
+
+     console.log('✅ User created successfully:', {
+       id: newUser._id,
+       name: newUser.name,
+       email: newUser.email,
+       role: newUser.role
+     });
+
+     res.status(201).json({
+       success: true,
+       message: "User registered successfully",
+       data: {
+         id: newUser._id,
+         name: newUser.name,
+         email: newUser.email,
+         role: newUser.role,
+         department: newUser.department,
+         skills: newUser.skills
+       }
+     });
+   } catch (error) {
+     console.error('❌ Registration error:', error.message);
+     console.error('📋 Full error:', error);
+     return res.status(500).json({
+       success: false,
+       error: "Server error during registration"
+     });
+   }
+ });
 
 //
 // @route   POST /api/v1/auth/login
 //
-export const login = asyncHandler(async (req, res) => {
+const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  console.log('Login attempt:', { email, password });
+  console.log('🔍 Login attempt received:', { email, password: '***' });
+  console.log('📧 Email:', email);
+  console.log('🔑 Password length:', password ? password.length : 'none');
 
   // Validate
   if (!email || !password) {
+    console.log('❌ Missing email or password');
     return res.status(400).json({
       success: false,
       error: "Please provide email and password",
     });
   }
 
-  // Mock user check
-  const user = mockUsers.find(u => u.email === email);
-  console.log('User found:', user ? 'Yes' : 'No');
+  try {
+    // Find user in MongoDB
+    console.log('🔍 Searching for user in MongoDB...');
+    const user = await User.findOne({ email }).select('+password');
+    console.log('👤 User found:', user ? 'Yes' : 'No');
+    
+    if (user) {
+      console.log('📋 User details:');
+      console.log('  ID:', user._id);
+      console.log('  Name:', user.name);
+      console.log('  Email:', user.email);
+      console.log('  Role:', user.role);
+      console.log('  Password exists:', user.password ? 'Yes' : 'No');
+    }
 
-  if (!user) {
-    return res.status(401).json({
+    if (!user) {
+      console.log('❌ User not found in database');
+      return res.status(401).json({
+        success: false,
+        error: "Invalid credentials",
+      });
+    }
+
+    // Check password (User model has matchPassword method)
+    console.log('🔐 Comparing passwords...');
+    const isMatch = await user.matchPassword(password);
+    console.log('🔑 Password match result:', isMatch ? 'Success' : 'Failed');
+    
+    if (!isMatch) {
+      console.log('❌ Password does not match');
+      return res.status(401).json({
+        success: false,
+        error: "Invalid credentials",
+      });
+    }
+
+    // Generate proper JWT token
+    console.log('🎫 Generating JWT token...');
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET || 'your_jwt_secret',
+      { expiresIn: process.env.JWT_EXPIRE || '30d' }
+    );
+    console.log('🎫 Token generated successfully');
+
+    console.log('✅ Login successful for:', user.name, 'Role:', user.role);
+
+    res.status(200).json({
+      success: true,
+      token,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        skills: user.skills
+      },
+    });
+  } catch (error) {
+    console.error('❌ Login error:', error.message);
+    console.error('📋 Full error:', error);
+    return res.status(500).json({
       success: false,
-      error: "Invalid credentials",
+      error: "Server error during login"
     });
   }
-
-  // Mock password check (for ram@gmail.com, password should be 'ram123')
-  if (email === 'ram@gmail.com' && password !== 'ram123') {
-    return res.status(401).json({
-      success: false,
-      error: "Invalid credentials",
-    });
-  }
-
-  // Generate proper JWT token
-  const jwt = await import('jsonwebtoken');
-  const token = jwt.default.sign(
-    { id: user._id, email: user.email },
-    process.env.JWT_SECRET || 'your_jwt_secret',
-    { expiresIn: process.env.JWT_EXPIRE || '30d' }
-  );
-
-  res.status(200).json({
-    success: true,
-    token,
-    data: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  });
 });
 
 //
 // @route   GET /api/v1/auth/me
 //
-export const getMe = asyncHandler(async (req, res) => {
-  // Mock user data
-  const user = mockUsers[0]; // Return the mock user
+const getMe = asyncHandler(async (req, res) => {
+  // Get user ID from token (this should be set by auth middleware)
+  const userId = req.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({
+      success: false,
+      error: "User not authenticated",
+    });
+  }
 
-  res.status(200).json({
-    success: true,
-    data: user,
-  });
+  try {
+    // Find user in MongoDB
+    const user = await User.findById(userId).select('-password');
+  
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error while fetching profile"
+    });
+  }
 });
 
 //
 // @route   GET /api/v1/auth/logout
 //
-export const logout = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Logged out successfully",
   });
 });
+
+module.exports = {
+  register,
+  login,
+  getMe,
+  logout
+};

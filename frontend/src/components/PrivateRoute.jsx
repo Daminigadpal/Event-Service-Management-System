@@ -12,7 +12,13 @@ const PrivateRoute = ({ children, role }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && user.role !== role) {
+  // Handle multiple role options for staff routes
+  if (role === 'staff' && !['staff', 'event_manager'].includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Handle single role requirements
+  if (role && role !== 'staff' && user.role !== role) {
     return <Navigate to="/" replace />;
   }
 

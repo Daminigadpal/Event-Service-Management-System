@@ -1,5 +1,5 @@
 // backend/src/models/Booking.js
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -23,8 +23,8 @@ const bookingSchema = new mongoose.Schema(
       },
       required: [true, 'Event type is required']
     },
-    eventDate: { 
-      type: Date, 
+    eventDate: {
+      type: Date,
       required: [true, 'Event date is required'],
       validate: {
         validator: function(value) {
@@ -138,4 +138,4 @@ bookingSchema.statics.findByStaff = function(staffId) {
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
-export default Booking;
+module.exports = mongoose.model("Booking", bookingSchema);

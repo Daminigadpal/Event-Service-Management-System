@@ -1,11 +1,12 @@
 // backend/src/routes/user.js
-import express from 'express';
-import {
+const express = require('express');
+const {
   createUser,
   updateProfile,
-  getProfile
-} from '../controllers/userController.js';
-import { protect, authorize } from '../middleware/auth.js';
+  getProfile,
+  getUsers
+} = require('../controllers/userController.js');
+const { protect, authorize } = require("../middleware/auth.js");
 
 const router = express.Router();
 
@@ -18,4 +19,4 @@ router.route('/profile')
 router.use(protect, authorize('admin'));
 router.route('/').post(createUser);
 
-export default router;
+module.exports = router;

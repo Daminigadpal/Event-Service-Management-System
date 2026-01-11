@@ -1,7 +1,7 @@
 // frontend/src/api/auth.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Matches the backend route configuration
+const API_URL = 'http://localhost:5000/api/v1'; // Direct URL since proxy not working
 
 // Create axios instance
 const api = axios.create({

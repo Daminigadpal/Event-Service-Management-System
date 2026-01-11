@@ -1,4 +1,4 @@
-// backend/index.js
+// backend/index.js - ES Modules
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -22,10 +22,23 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie', 'Authorization']
 }));
 app.use(express.json());
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`🌐 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  console.log('📋 Headers:', req.headers);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('📦 Body:', req.body);
+  }
+  next();
+});
 
 // API routes
 app.use("/api/v1/auth", authRoutes);
@@ -65,14 +78,15 @@ app.use((err, req, res, next) => {
 // MongoDB connection and server start
 const startServer = async () => {
   try {
-    // Skip MongoDB connection for now and use in-memory data
-    console.log('Starting server without MongoDB connection (for testing)...');
+    // Connect to MongoDB first
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/event_management');
+    console.log('✅ MongoDB Connected Successfully');
     
-    const PORT = process.env.PORT || 5000;
+    const PORT = 5000; // Force port 5000
     const server = app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
       console.log(`API available at http://localhost:${PORT}/api/v1`);
-      console.log('⚠️  MongoDB connection skipped - using in-memory data for testing');
+      console.log('🗄️  MongoDB connected - using real database');
     });
 
     // Handle server errors
@@ -91,7 +105,11 @@ const startServer = async () => {
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err);
   // Close server & exit process
-  server?.close(() => process.exit(1));
+  if (server && typeof server.close === 'function') {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });
 
 // Start the server

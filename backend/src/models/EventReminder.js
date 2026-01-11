@@ -1,5 +1,5 @@
 // backend/src/models/EventReminder.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const eventReminderSchema = new mongoose.Schema({
   booking: {
@@ -48,4 +48,4 @@ eventReminderSchema.index({ customer: 1 });
 
 const EventReminder = mongoose.model('EventReminder', eventReminderSchema);
 
-export default EventReminder;
+module.exports = mongoose.model('EventReminder', eventReminderSchema);

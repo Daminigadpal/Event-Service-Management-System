@@ -11,6 +11,7 @@ import UserDashboard from "./pages/customer/UserDashboard";
 import BookingList from './pages/booking/BookingList';
 import BookingDetail from './pages/booking/BookingDetail';
 import CreateBooking from './pages/booking/CreateBooking';
+import ServiceManagement from './components/service/ServiceManagement';
 
 // Scheduling Components
 import AvailabilityCalendar from './components/scheduling/AvailabilityCalendar';
@@ -21,6 +22,16 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      
+      {/* Service Management */}
+      <Route 
+        path="/service-management" 
+        element={
+          <ProtectedRoute>
+            <ServiceManagement />
+          </ProtectedRoute>
+        } 
+      />
       
       {/* User Dashboard */}
       <Route 

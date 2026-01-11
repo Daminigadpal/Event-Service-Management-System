@@ -1,12 +1,12 @@
 // backend/src/routes/service.js
-import express from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import {
+const express = require('express');
+const { protect, authorize } = require("../middleware/auth.js");
+const {
   getServices,
   createService,
   updateService,
   deleteService
-} from '../controllers/serviceController.js';
+} = require('../controllers/serviceController.js');
 
 const router = express.Router();
 
@@ -22,4 +22,4 @@ router.route('/:id')
   .put(updateService)
   .delete(deleteService);
 
-export default router;
+module.exports = router;

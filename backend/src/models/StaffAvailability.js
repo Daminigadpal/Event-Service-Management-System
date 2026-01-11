@@ -1,5 +1,5 @@
 // backend/src/models/StaffAvailability.js
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const staffAvailabilitySchema = new mongoose.Schema({
   staff: {
@@ -46,4 +46,4 @@ staffAvailabilitySchema.index({ staff: 1, date: 1, 'timeSlots.startTime': 1 });
 
 const StaffAvailability = mongoose.model('StaffAvailability', staffAvailabilitySchema);
 
-export default StaffAvailability;
+module.exports = mongoose.model('StaffAvailability', staffAvailabilitySchema);

@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const userSchema = new mongoose.Schema(
   {
@@ -26,16 +26,24 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "staff", "admin"],
+      enum: ["user", "staff", "admin", "event_manager"],
       default: "user",
+    },
+    department: {
+      type: String,
+      default: "General",
+    },
+    skills: {
+      type: [String],
+      default: [],
     },
     phone: {
       type: String,
-      default: null,
+      default: "",
     },
     address: {
       type: String,
-      default: null,
+      default: "",
     },
     profileImage: {
       type: String,
@@ -45,28 +53,26 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-//
-// 🔐 HASH PASSWORD BEFORE SAVE
-//
+// HASH PASSWORD BEFORE SAVE
 userSchema.pre("save", async function () {
+  console.log('🔐 Pre-save hook triggered for user:', this.email);
   if (!this.isModified("password")) {
+    console.log('🔐 Password not modified, skipping hash');
     return;
   }
 
+  console.log('🔐 Hashing password...');
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  console.log('🔐 Password hashed successfully');
 });
 
-//
-// 🔑 MATCH PASSWORD
-//
+// MATCH PASSWORD
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-//
-// 🎫 SIGN JWT TOKEN
-//
+// SIGN JWT TOKEN
 userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
     { id: this._id },
@@ -75,4 +81,4 @@ userSchema.methods.getSignedJwtToken = function () {
   );
 };
 
-export default mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", userSchema);

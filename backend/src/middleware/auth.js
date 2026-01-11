@@ -1,20 +1,9 @@
 // backend/src/middleware/auth.js
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-import ErrorResponse from '../utils/errorResponse.js';
+const jwt = require('jsonwebtoken');
+const User = require('../models/User.js');
+const ErrorResponse = require('../utils/errorResponse.js');
 
-// Mock user data for testing without MongoDB
-const mockUsers = [
-  {
-    _id: '69607e6cc3465f9a8169107d',
-    name: 'Ram',
-    email: 'ram@gmail.com',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // 'ram123' hashed
-    role: 'user'
-  }
-];
-
-export const protect = async (req, res, next) => {
+const protect = async (req, res, next) => {
   let token;
 
   try {
@@ -31,18 +20,10 @@ export const protect = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
       console.log('Decoded token:', decoded);
       
-      // For mock authentication, check if user ID matches our mock user
-      if (decoded.id === '69607e6cc3465f9a8169107d') {
-        // Use mock user
-        req.user = mockUsers[0];
-        next();
-        return;
-      }
-      
-      // Get user from the token (for real JWT tokens)
+      // Get user from MongoDB
       const user = await User.findById(decoded.id).select('-password');
       
       if (!user) {
@@ -50,7 +31,9 @@ export const protect = async (req, res, next) => {
         return next(new ErrorResponse('User not found', 401));
       }
 
+      // Set user in request
       req.user = user;
+      console.log('User authenticated:', user.name, 'Role:', user.role);
       next();
     } catch (error) {
       console.log('Token verification failed:', error.message);
@@ -62,7 +45,7 @@ export const protect = async (req, res, next) => {
   }
 };
 
-export const authorize = (...roles) => {
+const authorize = (...roles) => {
   return (req, res, next) => {
     try {
       if (!req.user) {
@@ -85,3 +68,5 @@ export const authorize = (...roles) => {
     }
   };
 };
+
+module.exports = { protect, authorize };
