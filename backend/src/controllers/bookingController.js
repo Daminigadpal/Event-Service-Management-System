@@ -54,7 +54,7 @@ const getBooking = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/bookings
 // @access  Private
 const createBooking = asyncHandler(async (req, res, next) => {
-  const { service, eventType, eventDate, eventLocation, guestCount, specialRequests } = req.body;
+  const { service, eventType, eventDate, eventLocation, guestCount, specialRequests, specialRequirements } = req.body;
 
   // Validate required fields
   if (!service || !eventType || !eventDate || !eventLocation || !guestCount) {
@@ -69,7 +69,7 @@ const createBooking = asyncHandler(async (req, res, next) => {
     eventDate: new Date(eventDate),
     eventLocation,
     guestCount: parseInt(guestCount),
-    specialRequests,
+    specialRequests: specialRequests || specialRequirements, // Handle both field names
     status: 'inquiry'
   });
 

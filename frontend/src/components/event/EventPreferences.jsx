@@ -66,8 +66,8 @@ const EventPreferences = () => {
         eventType: preference.eventType ? preference.eventType.charAt(0).toUpperCase() + preference.eventType.slice(1) : '',
         preferredVenue: preference.preferredVenue || '',
         budgetRange: preference.budgetRange && typeof preference.budgetRange === 'object' 
-          ? `${preference.budgetRange.min}-${preference.budgetRange.max}`
-          : preference.budgetRange || '',
+          ? `${preference.budgetRange.min} - ${preference.budgetRange.max}`
+          : (typeof preference.budgetRange === 'string' ? preference.budgetRange : preference.budgetRange || ''),
         guestCount: preference.guestCount ? preference.guestCount.toString() : '',
         notes: preference.notes || ''
       });
@@ -113,7 +113,7 @@ const EventPreferences = () => {
           if (createError.response?.status === 400) {
             // User already has preferences, update the first one
             if (preferences.length > 0) {
-              await updateEventPreference(preferences[0]._id || preferences[0].id, currentPreference);
+              await updateEventPreference(currentPreference);
               toast.success('Event preference updated successfully');
             } else {
               throw createError;

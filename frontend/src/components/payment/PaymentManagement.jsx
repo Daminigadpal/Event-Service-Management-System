@@ -58,6 +58,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 
 const PaymentManagement = () => {
+  const { user } = useAuth();
   const [payments, setPayments] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,9 +68,9 @@ const PaymentManagement = () => {
   const [openInvoiceDialog, setOpenInvoiceDialog] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [tabValue, setTabValue] = useState(0);
-  const [bookings, setBookings] = useState([]); // Add bookings state
-  const [userProfile, setUserProfile] = useState({}); // Add user profile state
-  const [eventPreferences, setEventPreferences] = useState({}); // Add event preferences state
+  const [bookings, setBookings] = useState([]);
+  const [userProfile, setUserProfile] = useState({});
+  const [eventPreferences, setEventPreferences] = useState({});
   const [formData, setFormData] = useState({
     booking: '',
     paymentType: 'advance',
@@ -78,7 +79,6 @@ const PaymentManagement = () => {
     transactionId: '',
     notes: ''
   });
-  const { user } = useAuth();
 
   console.log('PaymentManagement component rendering'); // Debug log
 
@@ -109,7 +109,7 @@ const PaymentManagement = () => {
 
   const fetchUserProfile = async () => {
     try {
-      // Use user data from AuthContext instead of API call
+      // Use user from AuthContext (already available at component level)
       if (user) {
         setUserProfile({
           name: user.name || 'User',
@@ -118,8 +118,13 @@ const PaymentManagement = () => {
           address: user.address || 'Not provided'
         });
       } else {
-        console.log('No user data available in AuthContext');
-        setUserProfile({});
+        console.log('No user found in AuthContext');
+        setUserProfile({
+          name: 'Guest User',
+          email: 'guest@example.com',
+          phone: 'Not provided',
+          address: 'Not provided'
+        });
       }
     } catch (err) {
       console.error('Error fetching user profile:', err);
@@ -273,7 +278,7 @@ const PaymentManagement = () => {
           total: summary.data.booking.totalAmount
         }
       ];
-      
+
       await createInvoice({
         bookingId,
         items,
@@ -286,6 +291,22 @@ const PaymentManagement = () => {
     } catch (error) {
       console.error('Error creating invoice:', error);
       toast.error('Failed to create invoice');
+    }
+  };
+
+  const handleGenerateComprehensiveInvoice = async () => {
+    try {
+      // Create comprehensive invoice with all user data
+      await createInvoice({
+        taxRate: 18,
+        notes: 'Comprehensive invoice including all user profile, bookings, preferences, and payment data',
+        terms: 'This comprehensive invoice includes all your saved data for reference and record-keeping purposes.'
+      });
+      toast.success('Comprehensive invoice generated successfully');
+      fetchInvoices();
+    } catch (error) {
+      console.error('Error generating comprehensive invoice:', error);
+      toast.error('Failed to generate comprehensive invoice');
     }
   };
 
@@ -332,48 +353,65 @@ const PaymentManagement = () => {
   };
 
   const handleDownloadInvoice = (invoice) => {
-    // Create invoice content as text
+    // Create comprehensive invoice content
     const invoiceContent = `
-INVOICE #${invoice.invoiceNumber || invoice._id}
-===============================================
+================================================================================
+                              COMPREHENSIVE INVOICE
+================================================================================
+
+INVOICE DETAILS:
+Invoice #: ${invoice.invoiceNumber || invoice._id}
 Date: ${new Date(invoice.issueDate).toLocaleDateString()}
 Type: ${invoice.invoiceType?.toUpperCase() || 'INVOICE'}
 Status: ${invoice.status?.toUpperCase() || 'PENDING'}
+Due Date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
 
-BOOKING DETAILS:
-- Event Type: ${invoice.booking?.eventType || 'N/A'}
-- Event Date: ${new Date(invoice.booking?.eventDate).toLocaleDateString()}
-- Location: ${invoice.booking?.eventLocation || 'N/A'}
+================================================================================
 
-PAYMENT DETAILS:
-- Subtotal: ₹${invoice.subtotal?.toLocaleString() || '0'}
-- Tax Rate: ${invoice.taxRate || 0}%
-- Tax Amount: ₹${invoice.taxAmount?.toLocaleString() || '0'}
-- Total Amount: ₹${invoice.totalAmount?.toLocaleString() || '0'}
+${invoice.notes || 'No additional details available'}
 
-NOTES: ${invoice.notes || 'N/A'}
-TERMS: ${invoice.terms || 'N/A'}
-===============================================
+================================================================================
+
+FINANCIAL SUMMARY:
+Subtotal: ₹${invoice.subtotal?.toLocaleString() || '0'}
+Tax Rate: ${invoice.taxRate || 0}%
+Tax Amount: ₹${invoice.taxAmount?.toLocaleString() || '0'}
+Total Amount: ₹${invoice.totalAmount?.toLocaleString() || '0'}
+
+Payment Status: ${invoice.paymentStatus?.toUpperCase() || 'PENDING'}
+Advance Paid: ₹${invoice.advancePaid?.toLocaleString() || '0'}
+Balance Paid: ₹${invoice.balancePaid?.toLocaleString() || '0'}
+
+================================================================================
+
+TERMS & CONDITIONS:
+${invoice.terms || 'Payment due within 30 days of invoice date.'}
+
+================================================================================
+
+Generated on: ${new Date().toLocaleString()}
+Invoice ID: ${invoice._id}
+================================================================================
     `;
-    
+
     // Create a blob with the invoice content
     const blob = new Blob([invoiceContent], { type: 'text/plain;charset=utf-8' });
-    
+
     // Create a download link
     const url = window.URL.createObjectURL(blob);
-    
+
     // Create a temporary anchor element and trigger download
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Invoice_${invoice.invoiceNumber || invoice._id}.txt`;
+    link.download = `Comprehensive_Invoice_${invoice.invoiceNumber || invoice._id}.txt`;
     document.body.appendChild(link);
     link.click();
-    
+
     // Clean up
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    
-    toast.success(`Invoice ${invoice.invoiceNumber || invoice._id} downloaded successfully`);
+
+    toast.success(`Comprehensive invoice downloaded successfully`);
   };
 
 const renderPaymentsTable = () => (
@@ -530,8 +568,16 @@ const renderPaymentsTable = () => (
     invoices: invoices.length,
     bookings: bookings.length,
     userProfile: Object.keys(userProfile).length,
-    eventPreferences: Object.keys(eventPreferences).length
+    eventPreferences: Object.keys(eventPreferences).length,
+    user: user ? 'logged in' : 'not logged in'
   });
+
+  // Debug: Show raw data
+  console.log('Raw userProfile:', userProfile);
+  console.log('Raw eventPreferences:', eventPreferences);
+  console.log('Raw bookings:', bookings);
+  console.log('Raw payments:', payments);
+  console.log('Raw invoices:', invoices);
 
   return (
     <Box p={3}>
@@ -545,12 +591,33 @@ const renderPaymentsTable = () => (
         </Alert>
       )}
 
+      {/* Debug Section - Show data status */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography variant="body2">
+          <strong>Debug Status:</strong><br/>
+          User: {user ? 'Logged In' : 'Not Logged In'}<br/>
+          User Profile: {Object.keys(userProfile).length > 0 ? 'Loaded' : 'Empty'}<br/>
+          Event Preferences: {Object.keys(eventPreferences).length > 0 ? 'Loaded' : 'Empty'}<br/>
+          Bookings: {bookings.length} found<br/>
+          Payments: {payments.length} found<br/>
+          Invoices: {invoices.length} found
+        </Typography>
+      </Alert>
+
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
           <Tab label="Payments" icon={<ReceiptIcon />} />
           <Tab label="📋 Complete Dashboard" icon={<DescriptionIcon />} />
+          <Tab label="Invoices" icon={<ReceiptIcon />} />
         </Tabs>
       </Box>
+
+      {/* Tab Indicator - Show current tab */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        <Typography variant="body2">
+          <strong>Current Tab:</strong> {tabValue === 0 ? 'Payments' : tabValue === 1 ? 'Complete Dashboard' : 'Invoices'} (Value: {tabValue})
+        </Typography>
+      </Alert>
 
       {tabValue === 0 && (
         <Box>
@@ -571,9 +638,29 @@ const renderPaymentsTable = () => (
         </Box>
       )}
 
+      {tabValue === 2 && (
+        <Box>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5">Invoice History</Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<ReceiptIcon />}
+              onClick={handleGenerateComprehensiveInvoice}
+            >
+              Generate Comprehensive Invoice
+            </Button>
+          </Box>
+          {invoices.length === 0 ? (
+            <Alert severity="info">No invoices found. Click "Generate Comprehensive Invoice" to create one with all your data.</Alert>
+          ) : (
+            renderInvoicesTable()
+          )}
+        </Box>
+      )}
       {tabValue === 1 && (
         <Box>
-          <Typography variant="h5" mb={3}>Complete Dashboard Data</Typography>
+          <Typography variant="h5" mb={3}>🎯 COMPLETE DASHBOARD IS VISIBLE! 🎯</Typography>
           
           {/* User Profile Section */}
           <Card sx={{ mb: 3 }}>
@@ -622,7 +709,11 @@ const renderPaymentsTable = () => (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Typography><strong>Preferred Event Types:</strong> {eventPreferences.preferredEventTypes || 'Not specified'}</Typography>
                 <Typography><strong>Preferred Locations:</strong> {eventPreferences.preferredLocations || 'Not specified'}</Typography>
-                <Typography><strong>Budget Range:</strong> {eventPreferences.budgetRange || 'Not specified'}</Typography>
+                <Typography><strong>Budget Range:</strong> {
+                  eventPreferences.budgetRange && typeof eventPreferences.budgetRange === 'object' 
+                    ? `${eventPreferences.budgetRange.min} - ${eventPreferences.budgetRange.max}`
+                    : (typeof eventPreferences.budgetRange === 'string' ? eventPreferences.budgetRange : 'Not specified')
+                }</Typography>
                 <Typography><strong>Special Requirements:</strong> {eventPreferences.specialRequirements || 'None'}</Typography>
               </Box>
             </CardContent>
@@ -695,6 +786,129 @@ const renderPaymentsTable = () => (
                 <Typography><strong>Total Amount Paid:</strong> ₹{payments.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}</Typography>
                 <Typography><strong>Total Invoice Amount:</strong> ₹{invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0).toLocaleString()}</Typography>
               </Box>
+              
+              {/* Invoice Table */}
+              <Typography variant="h6" gutterBottom>Complete User Data & Invoice Information</Typography>
+              
+              {/* Always show user data section */}
+              <Box sx={{ mb: 3 }}>
+                {/* User Profile Section */}
+                <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>👤 User Profile</Typography>
+                  <Typography><strong>Name:</strong> {userProfile.name || 'N/A'}</Typography>
+                  <Typography><strong>Email:</strong> {userProfile.email || 'N/A'}</Typography>
+                  <Typography><strong>Phone:</strong> {userProfile.phone || 'N/A'}</Typography>
+                  <Typography><strong>Address:</strong> {userProfile.address || 'N/A'}</Typography>
+                </Box>
+
+                {/* Event Preferences Section */}
+                <Box sx={{ mb: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>🎯 Event Preferences</Typography>
+                  <Typography><strong>Preferred Event Type:</strong> {eventPreferences.preferredEventTypes || 'Not specified'}</Typography>
+                  <Typography><strong>Preferred Location:</strong> {eventPreferences.preferredLocations || 'Not specified'}</Typography>
+                  <Typography><strong>Budget Range:</strong> {
+                  eventPreferences.budgetRange && typeof eventPreferences.budgetRange === 'object' 
+                    ? `${eventPreferences.budgetRange.min} - ${eventPreferences.budgetRange.max}`
+                    : (typeof eventPreferences.budgetRange === 'string' ? eventPreferences.budgetRange : 'Not specified')
+                }</Typography>
+                  <Typography><strong>Special Requirements:</strong> {eventPreferences.specialRequirements || 'None'}</Typography>
+                </Box>
+
+                {/* All Bookings Section */}
+                <Box sx={{ mb: 2, p: 2, backgroundColor: '#fff3e0', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>📅 All Bookings ({bookings.length})</Typography>
+                  {bookings.length > 0 ? (
+                    bookings.map((booking, index) => (
+                      <Box key={booking._id} sx={{ mb: 1, p: 1, border: '1px solid #ddd', borderRadius: 1 }}>
+                        <Typography><strong>Booking {index + 1}:</strong> {booking.eventType || 'N/A'}</Typography>
+                        <Typography><strong>Date:</strong> {new Date(booking.eventDate).toLocaleDateString()}</Typography>
+                        <Typography><strong>Location:</strong> {booking.eventLocation || 'N/A'}</Typography>
+                        <Typography><strong>Status:</strong> {booking.status || 'N/A'}</Typography>
+                        <Typography><strong>Special Requests:</strong> {booking.specialRequests || 'None'}</Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography>No bookings found</Typography>
+                  )}
+                </Box>
+
+                {/* All Payments Section */}
+                <Box sx={{ mb: 2, p: 2, backgroundColor: '#e8f5e8', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>💰 All Payments ({payments.length})</Typography>
+                  {payments.length > 0 ? (
+                    payments.map((payment, index) => (
+                      <Box key={payment._id} sx={{ mb: 1, p: 1, border: '1px solid #ddd', borderRadius: 1 }}>
+                        <Typography><strong>Payment {index + 1}:</strong> ₹{payment.amount?.toLocaleString() || '0'}</Typography>
+                        <Typography><strong>Type:</strong> {payment.paymentType || 'N/A'}</Typography>
+                        <Typography><strong>Method:</strong> {payment.paymentMethod || 'N/A'}</Typography>
+                        <Typography><strong>Status:</strong> {payment.status || 'N/A'}</Typography>
+                        <Typography><strong>Date:</strong> {new Date(payment.paymentDate).toLocaleDateString()}</Typography>
+                        <Typography><strong>Receipt:</strong> {payment.receiptNumber || 'N/A'}</Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography>No payments found</Typography>
+                  )}
+                </Box>
+              </Box>
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell><strong>Invoice #</strong></TableCell>
+                      <TableCell><strong>Type</strong></TableCell>
+                      <TableCell><strong>Booking</strong></TableCell>
+                      <TableCell><strong>Total</strong></TableCell>
+                      <TableCell><strong>Status</strong></TableCell>
+                      <TableCell><strong>Actions</strong></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {invoices.slice(0, 3).map((invoice) => (
+                      <TableRow key={invoice._id}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold">
+                            {invoice.invoiceNumber}
+                          </Typography>
+                          <Typography variant="caption" display="block">
+                            {new Date(invoice.issueDate).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                            {invoice.booking?.eventType || 'N/A'}
+                          </Typography>
+                          <Typography variant="caption" display="block">
+                            {new Date(invoice.booking?.eventDate).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold">
+                            ₹{invoice.totalAmount?.toLocaleString() || '0'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={invoice.status} 
+                            color={getStatusColor(invoice.status)} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
+                            color="primary"
+                            size="small"
+                            title="Download PDF"
+                            onClick={() => handleDownloadInvoice(invoice)}
+                          >
+                            <PdfIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Box>
@@ -714,7 +928,8 @@ const renderPaymentsTable = () => (
                 value={formData.booking}
                 onChange={(e) => setFormData({ ...formData, booking: e.target.value })}
                 required
-                helperText="Enter the booking ID (e.g., 67890abcd1234ef567890abcd1234ef56789)"
+                helperText="Enter the booking ID from your booking confirmation"
+                error={formData.booking && formData.booking.length !== 24 && !formData.booking.match(/^[0-9a-fA-F]{24}$/) ? "Invalid booking ID format" : ""}
               />
               
               <FormControl fullWidth>
