@@ -13,6 +13,7 @@ import EventPreferences from '../../components/event/EventPreferences';
 import PaymentManagement from '../../components/payment/PaymentManagement';
 import ServiceManagement from '../../components/service/ServiceManagement';
 import AvailabilityCalendar from '../../components/scheduling/AvailabilityCalendar';
+import ScheduleView from '../../components/scheduling/ScheduleView';
 
 const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -46,6 +47,7 @@ const UserDashboard = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log(' User Input change:', { name, value, isEditing });
     setProfile(prev => ({
       ...prev,
       [name]: value
@@ -114,7 +116,10 @@ const UserDashboard = () => {
               <Typography variant="h5">Profile Information</Typography>
               <Button
                 variant="contained"
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                  console.log('🔧 User Edit button clicked, current isEditing:', isEditing);
+                  setIsEditing(!isEditing);
+                }}
               >
                 {isEditing ? 'Cancel' : 'Edit Profile'}
               </Button>
@@ -197,14 +202,8 @@ const UserDashboard = () => {
       )}
       {activeTab === 6 && (
         <Card>
-          <CardContent>
-            <Typography variant="h5">Schedule View</Typography>
-            <Typography variant="body2">
-              This is the Schedule View component. Daily and weekly schedule views will be displayed here.
-            </Typography>
-            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-              <Typography variant="body2">📊 Schedule features coming soon...</Typography>
-            </Box>
+          <CardContent sx={{ p: 0 }}>
+            <ScheduleView />
           </CardContent>
         </Card>
       )}

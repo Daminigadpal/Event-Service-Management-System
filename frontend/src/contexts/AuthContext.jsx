@@ -50,11 +50,18 @@ export const AuthProvider = ({ children }) => {
 
   const updateUserProfile = async (profileData) => {
     try {
-      const response = await api.put('/users/profile', profileData);
+      console.log('Sending profile data:', profileData);
+      const response = await api.put('/users/profile', {
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        address: profileData.address
+      });
       setUser(prev => ({ ...prev, ...response.data.data }));
       toast.success('Profile updated successfully');
       return response.data;
     } catch (error) {
+      console.error('Profile update error:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to update profile');
       throw error;
     }

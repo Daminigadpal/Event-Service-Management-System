@@ -90,6 +90,7 @@ const StaffDashboard = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log('🔧 Staff Input change:', { name, value, isEditing });
     setProfile(prev => ({
       ...prev,
       [name]: value
@@ -180,7 +181,10 @@ const StaffDashboard = () => {
               <Typography variant="h5">Staff Profile</Typography>
               <Button 
                 variant="contained" 
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => {
+                  console.log('🔧 Staff Edit button clicked, current isEditing:', isEditing);
+                  setIsEditing(!isEditing);
+                }}
                 startIcon={<span>✏️</span>}
               >
                 {isEditing ? 'Cancel' : 'Edit Profile'}

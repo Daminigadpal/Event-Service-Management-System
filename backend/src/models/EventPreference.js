@@ -37,7 +37,8 @@ const eventPreferenceSchema = new mongoose.Schema({
   guestCount: {
     type: Number,
     required: [true, 'Guest count is required'],
-    min: [1, 'Guest count must be at least 1']
+    min: [1, 'Guest count must be at least 1'],
+    max: 1000
   },
   notes: {
     type: String,

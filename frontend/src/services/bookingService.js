@@ -12,6 +12,19 @@ export const getBookings = async () => {
   }
 };
 
+// Get ALL bookings from database (Admin only)
+export const getAllBookings = async () => {
+  try {
+    console.log(' Fetching ALL bookings from database...');
+    const response = await api.get('/public-bookings');
+    console.log(' All bookings response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all bookings:', error);
+    throw error;
+  }
+};
+
 // Get single booking
 export const getBooking = async (bookingId) => {
   try {

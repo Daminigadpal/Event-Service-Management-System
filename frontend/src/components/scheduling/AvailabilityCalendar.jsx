@@ -323,44 +323,77 @@ const AvailabilityCalendar = ({ readOnly = false }) => {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" mb={2}>
-              Daily Schedule - {selectedDate.toLocaleDateString()}
+              📅 Daily Schedule - {selectedDate.toLocaleDateString()}
             </Typography>
 
             {dailySchedule ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" mb={2}>
-                  Total Bookings: {dailySchedule.summary.totalBookings}
+                  📊 Total Bookings: {dailySchedule.summary.totalBookings}
                 </Typography>
 
-                {dailySchedule.bookings.length > 0 ? (
-                  dailySchedule.bookings.map((booking, index) => (
-                    <Box key={booking._id} sx={{ mb: 2, p: 1, border: '1px solid #ddd', borderRadius: 1 }}>
-                      <Typography variant="body2" fontWeight="bold">
-                        {booking.service?.name}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Customer: {booking.customer?.name}
-                      </Typography>
-                      <Typography variant="caption" display="block">
-                        Time: {new Date(booking.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                      <Chip
-                        label={booking.status}
-                        size="small"
-                        color={booking.status === 'confirmed' ? 'success' : 'default'}
-                        sx={{ mt: 1 }}
-                      />
-                    </Box>
-                  ))
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No bookings scheduled for this day
+                {/* Enhanced Schedule View */}
+                <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    📋 All Booked Time Slots
                   </Typography>
-                )}
+                  
+                  {dailySchedule.bookings.length > 0 ? (
+                    dailySchedule.bookings.map((booking, index) => (
+                      <Box key={booking._id} sx={{ 
+                        mb: 2, 
+                        p: 2, 
+                        border: '1px solid #ddd', 
+                        borderRadius: 1,
+                        backgroundColor: '#fff',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" fontWeight="bold" color="primary">
+                              🕐 Time Slot
+                            </Typography>
+                            <Typography variant="h6">
+                              {new Date(booking.eventDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} md={6}>
+                            <Typography variant="body2" fontWeight="bold" color="primary">
+                              📝 Service Details
+                            </Typography>
+                            <Typography><strong>Service:</strong> {booking.service?.name || 'N/A'}</Typography>
+                            <Typography><strong>Customer:</strong> {booking.customer?.name || 'N/A'}</Typography>
+                            <Typography><strong>Event Type:</strong> {booking.eventType || 'N/A'}</Typography>
+                            <Typography><strong>Location:</strong> {booking.eventLocation || 'N/A'}</Typography>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Typography variant="body2" fontWeight="bold" color="primary">
+                              📊 Status & Actions
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip
+                                label={booking.status}
+                                size="small"
+                                color={booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : 'default'}
+                              />
+                              <Typography variant="caption" sx={{ ml: 1 }}>
+                                Created: {new Date(booking.createdAt).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                      📭 No bookings scheduled for this day
+                    </Typography>
+                  )}
+                </Box>
               </Box>
             ) : (
-              <Typography variant="body2" color="text.secondary">
-                Select a date to view schedule
+              <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                📅 Select a date to view schedule
               </Typography>
             )}
           </Paper>

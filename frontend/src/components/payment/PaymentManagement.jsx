@@ -73,6 +73,7 @@ const PaymentManagement = () => {
   const [eventPreferences, setEventPreferences] = useState({});
   const [formData, setFormData] = useState({
     booking: '',
+    user: user?.id || '', // Add user field from auth context
     paymentType: 'advance',
     amount: '',
     paymentMethod: 'cash',
@@ -212,6 +213,7 @@ const PaymentManagement = () => {
     } else {
       setFormData({
         booking: '',
+        user: user?.id || '', // Include user field
         paymentType: 'advance',
         amount: '',
         paymentMethod: 'cash',
@@ -227,6 +229,7 @@ const PaymentManagement = () => {
     setSelectedPayment(null);
     setFormData({
       booking: '',
+      user: user?.id || '', // Include user field
       paymentType: 'advance',
       amount: '',
       paymentMethod: 'cash',

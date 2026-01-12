@@ -29,7 +29,7 @@ export const getEventPreferences = async () => {
     console.log('Token available:', !!token);
     console.log('Token value (first 20 chars):', token ? token.substring(0, 20) + '...' : 'none');
     
-    const response = await api.get('/event-preferences');
+    const response = await api.get('event-preferences');
     console.log('GET request successful:', response.data);
     return response.data;
   } catch (error) {
@@ -76,7 +76,7 @@ export const createEventPreference = async (preferenceData) => {
     console.log('DEBUG: Transformed data in service:', JSON.stringify(transformedData, null, 2));
 
     // Use direct URL to bypass proxy cache issues
-    const response = await api.post('/event-preferences', transformedData);
+    const response = await api.post('event-preferences', transformedData);
     console.log('DEBUG: Event preference created successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -127,7 +127,7 @@ export const updateEventPreference = async (preferenceData) => {
     console.log('DEBUG: Transformed data in update service:', JSON.stringify(transformedData, null, 2));
 
     // Use direct URL to bypass proxy cache issues
-    const response = await api.put('/event-preferences', transformedData);
+    const response = await api.put('event-preferences', transformedData);
     console.log('DEBUG: Event preference updated successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -141,7 +141,7 @@ export const updateEventPreference = async (preferenceData) => {
 // Delete an event preference
 export const deleteEventPreference = async (id) => {
   try {
-    await api.delete(`/event-preferences/${id}`);
+    await api.delete(`event-preferences/${id}`);
     return { success: true };
   } catch (error) {
     console.error('Error deleting event preference:', error);

@@ -24,6 +24,38 @@ const getBookings = asyncHandler(async (req, res, next) => {
   });
 });
 
+// @desc    Get ALL bookings from database (Admin only)
+// @route   GET /api/v1/bookings/all
+// @access  Private/Admin
+const getAllBookings = asyncHandler(async (req, res, next) => {
+  console.log('🔍 Getting ALL bookings from database...');
+  
+  try {
+    // Get all bookings from database with full population
+    const bookings = await Booking.find({})
+      .populate('customer', 'name email phone')
+      .populate('service', 'name description price duration')
+      .populate('staffAssigned', 'name email phone')
+      .sort({ eventDate: 1 });
+
+    console.log('📊 Found bookings:', bookings.length);
+    
+    res.status(200).json({
+      success: true,
+      data: bookings,
+      count: bookings.length,
+      message: 'All bookings retrieved successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error getting all bookings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve bookings',
+      message: error.message
+    });
+  }
+});
+
 // @desc    Get single booking
 // @route   GET /api/v1/bookings/:id
 // @access  Private
@@ -301,6 +333,7 @@ const deleteBooking = asyncHandler(async (req, res, next) => {
 
 module.exports = {
   getBookings,
+  getAllBookings,
   getBooking,
   createBooking,
   updateBooking,

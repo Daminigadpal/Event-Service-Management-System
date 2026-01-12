@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schedule View Test</title>
+    <script>
+        console.log('🔍 Testing ScheduleView component independently...');
+        
+        // Test if ScheduleView component exists and is accessible
+        fetch('http://localhost:5174/scheduling/schedule')
+            .then(response => response.text())
+            .then(html => {
+                console.log('✅ Schedule View page loaded successfully');
+                console.log('📄 HTML content length:', html.length);
+                
+                if (html.includes('📊 Schedule features coming soon')) {
+                    console.log('❌ Still showing "coming soon" message');
+                } else if (html.includes('Schedule Management')) {
+                    console.log('✅ Schedule Management interface is visible');
+                } else if (html.includes('ScheduleView')) {
+                    console.log('✅ ScheduleView component is rendering');
+                } else {
+                    console.log('🔍 Unknown content, checking manually...');
+                    console.log('First 500 chars:', html.substring(0, 500));
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error accessing Schedule View:', error);
+            });
+    </script>
+</head>
+<body>
+    <h1>Testing Schedule View Component</h1>
+    <p>Check browser console for results...</p>
+    <p><a href="http://localhost:5174/scheduling/schedule" target="_blank">Open Schedule View</a></p>
+    <p><a href="http://localhost:5174/dashboard" target="_blank">Open User Dashboard</a></p>
+</body>
+</html>

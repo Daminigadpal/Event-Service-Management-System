@@ -3,6 +3,7 @@ const express = require('express');
 const { protect, authorize } = require('../middleware/auth.js');
 const {
   getBookings,
+  getAllBookings,
   getBooking,
   createBooking,
   updateBooking,
@@ -23,6 +24,9 @@ router.use(protect);
 router.route('/')
   .get(getBookings)
   .post(createBooking);
+
+// Admin only: Get ALL bookings from database
+router.get('/all', authorize('admin'), getAllBookings);
 
 // Get, update, or delete specific booking
 router.route('/:id')

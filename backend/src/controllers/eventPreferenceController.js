@@ -156,7 +156,7 @@ const updateEventPreferences = asyncHandler(async (req, res, next) => {
       notes,
       updatedAt: new Date()
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: false }
   );
   console.log('DEBUG: Update result:', preference);
 

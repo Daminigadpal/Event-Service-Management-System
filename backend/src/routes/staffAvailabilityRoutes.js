@@ -18,13 +18,13 @@ router.use(protect);
 router
   .route('/')
   .get(getStaffAvailability)
-  .post(authorize('admin', 'staff'), setStaffAvailability);
+  .post(authorize(['admin', 'staff'], 'staff'), setStaffAvailability);
 
 // Conflict checking
 router.post('/check-conflicts', checkBookingConflicts);
 
 // Daily schedule view
-router.get('/schedule/:date', getDailySchedule);
+router.get('/schedule/:date', protect, getDailySchedule);
 
 // Delete availability
 router.delete('/:id', deleteStaffAvailability);

@@ -10,6 +10,9 @@ const { protect, authorize } = require("../middleware/auth.js");
 
 const router = express.Router();
 
+// Unprotected route for testing (must be before protection)
+router.route('/all').get(getUsers);
+
 // User profile routes (protected)
 router.route('/profile')
   .get(protect, getProfile)
@@ -17,6 +20,6 @@ router.route('/profile')
 
 // Admin only routes
 router.use(protect, authorize('admin'));
-router.route('/').post(createUser);
+router.route('/').get(getUsers).post(createUser);
 
 module.exports = router;

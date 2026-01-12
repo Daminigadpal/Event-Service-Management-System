@@ -1,4 +1,5 @@
 // In frontend/src/pages/Login.jsx
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
@@ -6,16 +7,37 @@ import api from '../utils/api';
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const email = formData.get('email');
-    const password = formData.get('password');
+    
+    console.log('Sending login request with:', { 
+      email: formData.email, 
+      password: formData.password ? formData.password.length + ' chars' : 'none' 
+    });
+    
+    if (!formData.email || !formData.password) {
+      console.error('❌ Missing email or password');
+      return;
+    }
 
     try {
-      console.log('Sending login request with:', { email, password });
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { 
+        email: formData.email, 
+        password: formData.password 
+      });
       console.log('Login response:', response.data);
       
       const { token, data: userData } = response.data;
@@ -46,8 +68,22 @@ const Login = () => {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Password" required />
+        <input 
+          type="email" 
+          name="email" 
+          placeholder="Email" 
+          value={formData.email}
+          onChange={handleChange}
+          required 
+        />
+        <input 
+          type="password" 
+          name="password" 
+          placeholder="Password" 
+          value={formData.password}
+          onChange={handleChange}
+          required 
+        />
         <button type="submit">Login</button>
       </form>
       <p>

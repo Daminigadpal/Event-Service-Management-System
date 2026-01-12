@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { 
   getBookings, 
+  getAllBookings,
   createBooking, 
   updateBookingStatus, 
   deleteBooking,
@@ -35,7 +36,7 @@ const BookingManagement = () => {
   const [newBooking, setNewBooking] = useState({
     service: '',
     eventType: 'wedding',
-    eventDate: '',
+    eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
     eventLocation: '',
     guestCount: '',
     specialRequests: '',
@@ -47,9 +48,13 @@ const BookingManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getBookings();
+      
+      // Use getAllBookings for admin, getBookings for regular users
+      const response = user?.role === 'admin' ? await getAllBookings() : await getBookings();
+      
       if (response.success) {
         setBookings(Array.isArray(response.data) ? response.data : []);
+        console.log(`✅ Loaded ${response.data?.length || 0} bookings for ${user?.role || 'user'}`);
       } else {
         throw new Error(response.message || 'Failed to fetch bookings');
       }
@@ -68,6 +73,15 @@ const BookingManagement = () => {
 
   const handleOpenDialog = () => {
     setOpenDialog(true);
+    setNewBooking({
+      service: '',
+      eventType: 'wedding',
+      eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+      eventLocation: '',
+      guestCount: '',
+      specialRequests: '',
+      status: 'Inquiry'
+    });
   };
 
   const handleCloseDialog = () => {
@@ -75,7 +89,7 @@ const BookingManagement = () => {
     setNewBooking({
       service: '',
       eventType: 'wedding',
-      eventDate: '',
+      eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
       eventLocation: '',
       guestCount: '',
       specialRequests: '',
@@ -195,7 +209,9 @@ const handleCreateBooking = async () => {
   return (
     <Box p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">My Bookings</Typography>
+        <Typography variant="h5">
+          {user?.role === 'admin' ? 'All Bookings' : 'My Bookings'}
+        </Typography>
         {user?.role === 'user' && (
           <Button 
             variant="contained" 

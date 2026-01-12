@@ -7,13 +7,16 @@ import cors from "cors";
 // Routes
 import authRoutes from "./src/routes/auth.js";
 import userRoutes from "./src/routes/user.js";
+import publicUserRoutes from "./src/routes/publicUserRoutes.js";
 import serviceRoutes from "./src/routes/service.js";
 import bookingRoutes from "./src/routes/booking.js";
+import publicBookingRoutes from "./src/routes/publicBookingRoutes.js";
 import eventPreferenceRoutes from "./src/routes/eventPreferenceRoutes.js";
 import staffAvailabilityRoutes from "./src/routes/staffAvailabilityRoutes.js";
 import eventReminderRoutes from "./src/routes/eventReminderRoutes.js";
 import paymentRoutes from "./src/routes/paymentRoutes.js";
 import servicePackageRoutes from "./src/routes/servicePackageRoutes.js";
+import eventExecutionRoutes from "./src/routes/eventExecutionRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -22,7 +25,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5175', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -43,13 +46,16 @@ app.use((req, res, next) => {
 // API routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/public-users", publicUserRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
+app.use("/api/v1/public-bookings", publicBookingRoutes);
 app.use("/api/v1/event-preferences", eventPreferenceRoutes);
 app.use("/api/v1/staff-availability", staffAvailabilityRoutes);
 app.use("/api/v1/event-reminders", eventReminderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/service-packages", servicePackageRoutes); // Added route
+app.use("/api/v1/event-executions", eventExecutionRoutes); // Added route
 
 // Basic route for testing
 app.get("/", (req, res) => {
