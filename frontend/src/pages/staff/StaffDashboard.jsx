@@ -1,14 +1,17 @@
 // frontend/src/pages/staff/StaffDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { 
-  Box, Tabs, Tab, Typography, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box, Tabs, Tab, Typography,
   Container, CircularProgress, Alert,
   Card, CardContent, TextField, Button,
   List, ListItem, ListItemText, Chip,
   Avatar, Grid, Paper
 } from '@mui/material';
+import { PictureAsPdf as PdfIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { useAuth } from '../../contexts/AuthContext';
 import BookingManagement from '../../components/booking/BookingManagement';
 import AvailabilityCalendar from '../../components/scheduling/AvailabilityCalendar';
@@ -29,6 +32,7 @@ const StaffDashboard = () => {
   const [userBookings, setUserBookings] = useState([]);
   const { user, updateUserProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const dashboardRef = useRef();
 
   useEffect(() => {
     if (user) {
@@ -40,7 +44,7 @@ const StaffDashboard = () => {
         department: user.department || 'Event Management',
         skills: user.skills || ['Photography', 'Event Setup']
       });
-      
+
       // Mock user bookings data
       const mockBookings = [
         {
@@ -77,7 +81,7 @@ const StaffDashboard = () => {
           paymentStatus: 'paid'
         }
       ];
-      
+
       setUserBookings(mockBookings);
       setLoading(false);
     }
@@ -115,6 +119,40 @@ const StaffDashboard = () => {
     navigate('/login', { replace: true });
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const element = dashboardRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save('staff-dashboard.pdf');
+      toast.success('PDF downloaded successfully');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   const getStatusColor = (status) => {
     switch(status) {
       case 'confirmed': return 'success';
@@ -138,226 +176,238 @@ const StaffDashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Header with logout button */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ 
-          background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: 'bold'
-        }}>
-          🎯 Staff Dashboard
-        </Typography>
-        <Button 
-          variant="outlined" 
-          color="error"
-          onClick={handleLogout}
-          startIcon={<span>🚪</span>}
+    <div ref={dashboardRef}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Header with logout button */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" sx={{
+            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            fontWeight: 'bold'
+          }}>
+            🎯 Staff Dashboard
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<PdfIcon />}
+              onClick={handleDownloadPDF}
+              color="primary"
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleLogout}
+              startIcon={<span>🚪</span>}
+            >
+              Logout
+            </Button>
+          </Box>
+        </Box>
+
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label="staff dashboard tabs"
+          sx={{ mb: 3 }}
+          variant="scrollable"
+          scrollButtons="auto"
         >
-          Logout
-        </Button>
-      </Box>
+          <Tab label="👤 Profile" />
+          <Tab label="📅 Availability Calendar" />
+          <Tab label="📊 Schedule View" />
+          <Tab label="📋 My Bookings" />
+        </Tabs>
 
-      <Tabs 
-        value={activeTab} 
-        onChange={handleTabChange} 
-        aria-label="staff dashboard tabs"
-        sx={{ mb: 3 }}
-        variant="scrollable"
-        scrollButtons="auto"
-      >
-        <Tab label="👤 Profile" />
-        <Tab label="📅 Availability Calendar" />
-        <Tab label="📊 Schedule View" />
-        <Tab label="📋 My Bookings" />
-      </Tabs>
+        {/* Profile Tab */}
+        {activeTab === 0 && (
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h5">Staff Profile</Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    console.log('🔧 Staff Edit button clicked, current isEditing:', isEditing);
+                    setIsEditing(!isEditing);
+                  }}
+                  startIcon={<span>✏️</span>}
+                >
+                  {isEditing ? 'Cancel' : 'Edit Profile'}
+                </Button>
+              </Box>
 
-      {/* Profile Tab */}
-      {activeTab === 0 && (
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h5">Staff Profile</Typography>
-              <Button 
-                variant="contained" 
-                onClick={() => {
-                  console.log('🔧 Staff Edit button clicked, current isEditing:', isEditing);
-                  setIsEditing(!isEditing);
-                }}
-                startIcon={<span>✏️</span>}
-              >
-                {isEditing ? 'Cancel' : 'Edit Profile'}
-              </Button>
-            </Box>
-            
-            <Box component="form" onSubmit={handleSaveProfile} sx={{ mt: 2 }}>
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Full Name"
-                    name="name"
-                    value={profile.name}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    required
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
+              <Box component="form" onSubmit={handleSaveProfile} sx={{ mt: 2 }}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Full Name"
+                      name="name"
+                      value={profile.name}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      required
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Email"
+                      name="email"
+                      type="email"
+                      value={profile.email}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      required
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Phone"
+                      name="phone"
+                      value={profile.phone}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      fullWidth
+                      label="Role"
+                      name="role"
+                      value={profile.role}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Department"
+                      name="department"
+                      value={profile.department}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField
+                      fullWidth
+                      label="Skills"
+                      name="skills"
+                      value={profile.skills.join(', ')}
+                      onChange={(e) => setProfile(prev => ({...prev, skills: e.target.value.split(',').map(s => s.trim())}))}
+                      disabled={!isEditing}
+                      helperText="Separate multiple skills with commas"
+                      variant={isEditing ? "outlined" : "filled"}
+                    />
+                  </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={profile.email}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    required
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Phone"
-                    name="phone"
-                    value={profile.phone}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Role"
-                    name="role"
-                    value={profile.role}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    label="Department"
-                    name="department"
-                    value={profile.department}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <TextField
-                    fullWidth
-                    label="Skills"
-                    name="skills"
-                    value={profile.skills.join(', ')}
-                    onChange={(e) => setProfile(prev => ({...prev, skills: e.target.value.split(',').map(s => s.trim())}))}
-                    disabled={!isEditing}
-                    helperText="Separate multiple skills with commas"
-                    variant={isEditing ? "outlined" : "filled"}
-                  />
-                </Grid>
-              </Grid>
-              
-              {isEditing && (
-                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                  <Button 
-                    type="submit" 
-                    variant="contained" 
-                    color="primary"
-                    startIcon={<span>💾</span>}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Availability Calendar Tab */}
-      {activeTab === 1 && (
-        <Box>
-          <AvailabilityCalendar />
-        </Box>
-      )}
+                {isEditing && (
+                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      startIcon={<span>💾</span>}
+                    >
+                      Save Changes
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Schedule View Tab */}
-      {activeTab === 2 && (
-        <Box>
-          <ScheduleView />
-        </Box>
-      )}
+        {/* Availability Calendar Tab */}
+        {activeTab === 1 && (
+          <Box>
+            <AvailabilityCalendar />
+          </Box>
+        )}
 
-      {/* My Bookings Tab */}
-      {activeTab === 3 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h5" gutterBottom>
-              📋 My Assigned Bookings
-            </Typography>
-            
-            <List>
-              {userBookings.map((booking) => (
-                <Paper key={booking.id} sx={{ mb: 2, p: 2 }}>
-                  <ListItem alignItems="flex-start">
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, md: 8 }}>
-                          <Typography variant="h6" color="primary">
-                            {booking.eventName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            👤 Customer: {booking.customerName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            📍 Location: {booking.location}
-                          </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, md: 4 }}>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Chip 
-                              label={booking.status} 
-                              color={getStatusColor(booking.status)}
-                              size="small"
-                              sx={{ mb: 1 }}
-                            />
-                            <Chip 
-                              label={`Payment: ${booking.paymentStatus}`} 
-                              color={getPaymentStatusColor(booking.paymentStatus)}
-                              size="small"
-                              sx={{ mb: 1 }}
-                            />
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              📅 {booking.date}
+        {/* Schedule View Tab */}
+        {activeTab === 2 && (
+          <Box>
+            <ScheduleView />
+          </Box>
+        )}
+
+        {/* My Bookings Tab */}
+        {activeTab === 3 && (
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                📋 My Assigned Bookings
+              </Typography>
+
+              <List>
+                {userBookings.map((booking) => (
+                  <Paper key={booking.id} sx={{ mb: 2, p: 2 }}>
+                    <ListItem alignItems="flex-start">
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 12, md: 8 }}>
+                            <Typography variant="h6" color="primary">
+                              {booking.eventName}
                             </Typography>
-                            <Typography variant="body2">
-                              ⏰ {booking.time}
+                            <Typography variant="body2" color="text.secondary">
+                              👤 Customer: {booking.customerName}
                             </Typography>
-                          </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              📍 Location: {booking.location}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 12, md: 4 }}>
+                            <Box sx={{ textAlign: 'right' }}>
+                              <Chip
+                                label={booking.status}
+                                color={getStatusColor(booking.status)}
+                                size="small"
+                                sx={{ mb: 1 }}
+                              />
+                              <Chip
+                                label={`Payment: ${booking.paymentStatus}`}
+                                color={getPaymentStatusColor(booking.paymentStatus)}
+                                size="small"
+                                sx={{ mb: 1 }}
+                              />
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                📅 {booking.date}
+                              </Typography>
+                              <Typography variant="body2">
+                                ⏰ {booking.time}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                          <Grid size={{ xs: 12 }}>
+                            <Typography variant="body2" sx={{ mt: 1 }}>
+                              🛠️ Services: {booking.services.join(', ')}
+                            </Typography>
+                          </Grid>
                         </Grid>
-                        <Grid size={{ xs: 12 }}>
-                          <Typography variant="body2" sx={{ mt: 1 }}>
-                            🛠️ Services: {booking.services.join(', ')}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </ListItem>
-                </Paper>
-              ))}
-            </List>
-          </CardContent>
-        </Card>
-      )}
-    </Container>
+                      </Box>
+                    </ListItem>
+                  </Paper>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        )}
+      </Container>
+    </div>
   );
 };
 

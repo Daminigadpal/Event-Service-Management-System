@@ -7,12 +7,14 @@ const cors = require('cors');
 const authRoutes = require('./src/routes/auth.js');
 const userRoutes = require('./src/routes/user.js');
 const publicUserRoutes = require('./src/routes/publicUserRoutes.js');
+const publicBookingRoutes = require('./src/routes/publicBookingRoutes.js');
 const serviceRoutes = require('./src/routes/service.js');
 const bookingRoutes = require('./src/routes/booking.js');
 const eventPreferenceRoutes = require('./src/routes/eventPreferenceRoutes.js');
 const staffAvailabilityRoutes = require('./src/routes/staffAvailabilityRoutes.js');
 const eventReminderRoutes = require('./src/routes/eventReminderRoutes.js');
 const paymentRoutes = require('./src/routes/paymentRoutes.js');
+const eventExecutionRoutes = require('./src/routes/eventExecutionRoutes.js');
 // const servicePackageRoutes = require('./src/routes/servicePackageRoutes.js');
 
 const app = express();
@@ -40,12 +42,14 @@ app.use((req, res, next) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/public-users", publicUserRoutes);
+app.use("/api/v1/public-bookings", publicBookingRoutes);
 app.use("/api/v1/services", serviceRoutes);
 app.use("/api/v1/bookings", bookingRoutes);
 app.use("/api/v1/event-preferences", eventPreferenceRoutes);
 app.use("/api/v1/staff-availability", staffAvailabilityRoutes);
 app.use("/api/v1/event-reminders", eventReminderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
+app.use("/api/v1/event-executions", eventExecutionRoutes);
 // app.use("/api/v1/service-packages", servicePackageRoutes);
 
 // Health check

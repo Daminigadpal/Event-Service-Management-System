@@ -18,7 +18,7 @@ router.use(protect);
 router
   .route('/')
   .get(getStaffAvailability)
-  .post(authorize(['admin', 'staff'], 'staff'), setStaffAvailability);
+  .post(authorize('admin', 'staff'), setStaffAvailability);
 
 // Conflict checking
 router.post('/check-conflicts', checkBookingConflicts);

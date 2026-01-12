@@ -1,6 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../api/auth";
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
+} from '@mui/material';
 import toast from "react-hot-toast";
 
 const Register = () => {
@@ -13,14 +27,20 @@ const Register = () => {
     role: "user", // default role
   });
 
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     console.log('Submitting registration form with data:', formData);
 
@@ -35,60 +55,120 @@ const Register = () => {
         navigate("/login");
       } else {
         console.error('❌ Registration failed:', res.error);
-        toast.error(res.error);
+        setError(res.error);
       }
     } catch (err) {
       console.error('❌ Registration error:', err);
       console.error('❌ Data not saved to database.');
-      toast.error(err.error || "Registration failed");
+      setError(err.error || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
+    <Container component="main" maxWidth="sm" sx={{ mt: 8 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Typography component="h1" variant="h4" sx={{ mb: 3 }}>
+          Create Account
+        </Typography>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          name="name"
-          placeholder="Full Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
+        <Card sx={{ width: '100%', maxWidth: 400 }}>
+          <CardContent sx={{ p: 4 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        <input
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="name"
+                label="Full Name"
+                name="name"
+                autoComplete="name"
+                autoFocus
+                value={formData.name}
+                onChange={handleChange}
+                disabled={loading}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                disabled={loading}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                value={formData.password}
+                onChange={handleChange}
+                disabled={loading}
+              />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="role-label">Role</InputLabel>
+                <Select
+                  labelId="role-label"
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  label="Role"
+                  onChange={handleChange}
+                  disabled={loading}
+                >
+                  <MenuItem value="user">User</MenuItem>
+                  <MenuItem value="staff">Staff</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="event_manager">Event Manager</MenuItem>
+                </Select>
+              </FormControl>
 
-        {/* ROLE SELECT */}
-        <select name="role" value={formData.role} onChange={handleChange}>
-          <option value="user">User</option>
-          <option value="staff">Staff</option>
-          <option value="admin">Admin</option>
-          <option value="event_manager">Event Manager</option>
-        </select>
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={loading}
+              >
+                {loading ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </Box>
 
-        <button type="submit">Register</button>
-      </form>
-
-      <p>
-        Already have an account? <Link to="/login">Login</Link>
-      </p>
-    </div>
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="body2">
+                Already have an account?{' '}
+                <Link to="/login" style={{ textDecoration: 'none' }}>
+                  Sign in here
+                </Link>
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    </Container>
   );
 };
 

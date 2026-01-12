@@ -2,6 +2,16 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Container,
+  Alert
+} from '@mui/material';
 import api from '../utils/api';
 
 const Login = () => {
@@ -11,6 +21,8 @@ const Login = () => {
     email: '',
     password: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,36 +30,40 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log('Sending login request with:', { 
-      email: formData.email, 
-      password: formData.password ? formData.password.length + ' chars' : 'none' 
+    setLoading(true);
+    setError('');
+
+    console.log('Sending login request with:', {
+      email: formData.email,
+      password: formData.password ? formData.password.length + ' chars' : 'none'
     });
-    
+
     if (!formData.email || !formData.password) {
-      console.error('❌ Missing email or password');
+      setError('Please fill in all fields');
+      setLoading(false);
       return;
     }
 
     try {
-      const response = await api.post('/auth/login', { 
-        email: formData.email, 
-        password: formData.password 
+      const response = await api.post('/auth/login', {
+        email: formData.email,
+        password: formData.password
       });
       console.log('Login response:', response.data);
-      
+
       const { token, data: userData } = response.data;
-      
+
       console.log('Calling login with token and userData:', { token, userData });
       login({ token, userData });
-      
+
       console.log('Login success:', true);
       console.log('User data from response:', userData);
-      
+
       // Navigate based on user role
       if (userData.role === 'admin') {
         console.log('Navigating to admin dashboard');
@@ -62,34 +78,84 @@ const Login = () => {
       console.log('Navigation called');
     } catch (error) {
       console.error('Login error:', error.response?.data?.message || error.message);
+      setError(error.response?.data?.error || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <input 
-          type="email" 
-          name="email" 
-          placeholder="Email" 
-          value={formData.email}
-          onChange={handleChange}
-          required 
-        />
-        <input 
-          type="password" 
-          name="password" 
-          placeholder="Password" 
-          value={formData.password}
-          onChange={handleChange}
-          required 
-        />
-        <button type="submit">Login</button>
-      </form>
-      <p>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
-    </div>
+    <Container component="main" maxWidth="sm" sx={{ mt: 8 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        <Typography component="h1" variant="h4" sx={{ mb: 3 }}>
+          Sign In
+        </Typography>
+
+        <Card sx={{ width: '100%', maxWidth: 400 }}>
+          <CardContent sx={{ p: 4 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                disabled={loading}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleChange}
+                disabled={loading}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={loading}
+              >
+                {loading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </Box>
+
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Typography variant="body2">
+                Don't have an account?{' '}
+                <Link to="/register" style={{ textDecoration: 'none' }}>
+                  Register here
+                </Link>
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    </Container>
   );
 };
 
