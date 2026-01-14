@@ -47,6 +47,21 @@ const createService = async (req, res, next) => {
   }
 };
 
+// @desc    Get single service
+// @route   GET /api/v1/services/:id
+// @access  Public
+const getService = async (req, res, next) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return next(new ErrorResponse(`Service not found with id of ${req.params.id}`, 404));
+    }
+    res.status(200).json({ success: true, data: service });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // @desc    Update service
 // @route   PUT /api/v1/services/:id
 // @access  Private/Admin
@@ -82,6 +97,7 @@ const deleteService = async (req, res, next) => {
 
 module.exports = {
   getServices,
+  getService,
   createService,
   updateService,
   deleteService

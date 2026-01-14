@@ -1,42 +1,32 @@
 // frontend/src/services/eventPreferenceService.js
 import api from '../utils/api';
 
-// Mock data for fallback
-const mockEventPreferences = [
-  { 
-    id: 1, 
-    eventType: 'Wedding', 
-    preferredVenue: 'Grand Ballroom', 
-    budgetRange: '5000-10000',
-    guestCount: '100-200',
-    notes: 'Outdoor ceremony preferred'
-  },
-  { 
-    id: 2, 
-    eventType: 'Corporate', 
-    preferredVenue: 'Conference Center', 
-    budgetRange: '3000-8000',
-    guestCount: '50-100',
-    notes: 'Need AV equipment'
-  },
-];
-
 // Get all event preferences
 export const getEventPreferences = async () => {
   try {
     console.log('Making GET request to /event-preferences');
     const token = localStorage.getItem('token');
     console.log('Token available:', !!token);
-    console.log('Token value (first 20 chars):', token ? token.substring(0, 20) + '...' : 'none');
     
-    const response = await api.get('event-preferences');
+    // Check if user is admin and use admin endpoint
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = user.role === 'admin';
+    console.log('User data:', user);
+    console.log('Is admin:', isAdmin);
+    
+    const endpoint = isAdmin ? 'event-preferences/all' : 'event-preferences';
+    console.log(`Using ${isAdmin ? 'admin' : 'user'} endpoint: ${endpoint}`);
+    
+    // Add cache-busting timestamp
+    const timestamp = new Date().getTime();
+    const response = await api.get(`${endpoint}?_t=${timestamp}`);
     console.log('GET request successful:', response.data);
     return response.data;
   } catch (error) {
     console.error('GET request failed:', error.message);
     console.error('Error details:', error.response?.status, error.response?.data);
-    console.warn('Using mock data due to API error:', error.message);
-    return { success: true, data: mockEventPreferences };
+    console.error('Full error object:', error);
+    throw error; // Don't use mock data, show real error
   }
 };
 

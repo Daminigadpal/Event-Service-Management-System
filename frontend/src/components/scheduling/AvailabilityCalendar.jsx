@@ -37,6 +37,11 @@ import {
   setStaffAvailability,
   getDailySchedule
 } from '../../services/staffAvailabilityService';
+import {
+  getUserAvailability,
+  setUserAvailability,
+  getUserDailySchedule
+} from '../../services/userAvailabilityService';
 
 const AvailabilityCalendar = ({ readOnly = false }) => {
   const { user } = useAuth();
@@ -66,10 +71,18 @@ const AvailabilityCalendar = ({ readOnly = false }) => {
       const startDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
       const endDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
 
-      const response = await getStaffAvailability({
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      });
+      let response;
+      if (user?.role === 'admin' || user?.role === 'staff') {
+        response = await getStaffAvailability({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        });
+      } else {
+        response = await getUserAvailability({
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        });
+      }
 
       if (response.success) {
         setAvailabilityData(response.data);

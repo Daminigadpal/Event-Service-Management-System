@@ -3,7 +3,7 @@ const router = express.Router();
 
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
-const packageCtrl = require("../controllers/packageController");
+const packageCtrl = require("../controllers/packageController.js");
 
 router.post("/", auth, role("ADMIN"), packageCtrl.createPackage);
 router.get("/", packageCtrl.getPackages);
