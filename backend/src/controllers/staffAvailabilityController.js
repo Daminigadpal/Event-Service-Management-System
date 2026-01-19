@@ -51,6 +51,10 @@ const setStaffAvailability = async (req, res, next) => {
     console.log('🔄 Processing staff availability request');
     const { staff, date, timeSlots, status, notes } = req.body;
     console.log('📋 Request data:', { staff, date, timeSlots, status, notes });
+    
+    // Use authenticated user's ID if no staff provided (for staff setting their own availability)
+    const staffId = staff || req.user.id;
+    console.log('👤 Using staff ID:', staffId);
   
   // Validate time slots
   if (timeSlots && timeSlots.length > 0) {
@@ -75,7 +79,7 @@ const setStaffAvailability = async (req, res, next) => {
   // Parse date correctly to avoid timezone issues
   const [year, month, day] = date.split('-').map(Number);
   const targetDate = new Date(year, month - 1, day); // month is 0-indexed
-  const existingAvailability = await StaffAvailability.findOne({ staff, date: targetDate });
+  const existingAvailability = await StaffAvailability.findOne({ staff: staffId, date: targetDate });
   
   let availability;
   
@@ -91,7 +95,7 @@ const setStaffAvailability = async (req, res, next) => {
   } else {
     // Create new availability
     availability = await StaffAvailability.create({
-      staff,
+      staff: staffId,
       date: targetDate,
       timeSlots: timeSlots || [],
       status: status || 'available',

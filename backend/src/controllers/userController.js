@@ -110,9 +110,9 @@ const getUsers = asyncHandler(async (req, res, next) => {
   try {
     // Get all users from MongoDB
     const users = await User.find({});
-    
+
     console.log('Found users:', users.length);
-    
+
     res.status(200).json({
       success: true,
       count: users.length,
@@ -124,9 +124,74 @@ const getUsers = asyncHandler(async (req, res, next) => {
   }
 });
 
+// @desc    Update user by ID
+// @route   PUT /api/v1/users/:id
+// @access   Private/Admin
+const updateUser = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    console.log('Updating user:', id, 'with data:', updateData);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        ...updateData,
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
+    console.log('User updated successfully:', updatedUser);
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    next(error);
+  }
+});
+
+// @desc    Delete user by ID
+// @route   DELETE /api/v1/users/:id
+// @access   Private/Admin
+const deleteUser = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    console.log('Deleting user:', id);
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return next(new ErrorResponse('User not found', 404));
+    }
+
+    console.log('User deleted successfully:', deletedUser);
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    next(error);
+  }
+});
+
 module.exports = {
   updateProfile,
   getProfile,
   createUser,
-  getUsers
+  getUsers,
+  updateUser,
+  deleteUser
 };

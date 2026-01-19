@@ -31,6 +31,7 @@ import { toast } from 'react-toastify';
 import { getDailySchedule, getStaffAvailability } from '../../services/staffAvailabilityService';
 
 const ScheduleView = () => {
+  console.log('🗓️ ScheduleView component rendering...');
   const [viewMode, setViewMode] = useState('day'); // 'day' or 'week'
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [scheduleData, setScheduleData] = useState(null);
@@ -117,7 +118,7 @@ const ScheduleView = () => {
               customer: { name: 'Demo Customer' },
               eventType: 'wedding',
               eventLocation: 'Demo Location',
-              eventDate: new Date(selectedDate).setHours(14, 0).toISOString(),
+              eventDate: new Date(new Date(selectedDate).setHours(14, 0)).toISOString(),
               status: 'confirmed',
               createdAt: new Date().toISOString()
             }

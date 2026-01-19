@@ -55,6 +55,9 @@ const BookingList = () => {
                       Event Type
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      Customer
+                    </th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                       Dates
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -75,7 +78,10 @@ const BookingList = () => {
                         {booking.eventType}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {booking.eventDates.map(date => 
+                        {booking.customer?.name || 'N/A'}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {booking.eventDates.map(date =>
                           new Date(date).toLocaleDateString()
                         ).join(', ')}
                       </td>

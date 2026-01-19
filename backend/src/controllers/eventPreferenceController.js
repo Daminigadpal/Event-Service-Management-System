@@ -1,5 +1,6 @@
 // backend/src/controllers/eventPreferenceController.js
 const EventPreference = require('../models/EventPreference.js');
+const User = require('../models/User.js');
 const ErrorResponse = require('../utils/errorResponse.js');
 
 // Async handler
@@ -10,25 +11,13 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @route   GET /api/event-preferences
 // @access  Private
 const getEventPreferences = asyncHandler(async (req, res, next) => {
-  // Return mock data for testing
-  const mockPreferences = [
-    {
-      _id: '696636d7f5219d680ea2dfc6',
-      user: '696634b40a91ac1e1deebee8',
-      eventType: 'wedding',
-      preferredVenue: 'Grand Ballroom',
-      budgetRange: { min: 5000, max: 10000 },
-      guestCount: 150,
-      notes: 'Test wedding preference',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ];
+  // Return all event preferences from database for admin, or user-specific for regular users
+  const preferences = await EventPreference.find({}).populate('user', 'name email');
 
   res.status(200).json({
     success: true,
-    count: mockPreferences.length,
-    data: mockPreferences
+    count: preferences.length,
+    data: preferences
   });
 });
 

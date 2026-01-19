@@ -4,7 +4,9 @@ const {
   createUser,
   updateProfile,
   getProfile,
-  getUsers
+  getUsers,
+  updateUser,
+  deleteUser
 } = require('../controllers/userController.js');
 const { protect, authorize } = require("../middleware/auth.js");
 
@@ -20,6 +22,11 @@ router.route('/profile')
 
 // Admin only routes
 router.use(protect, authorize('admin'));
-router.route('/').get(getUsers).post(createUser);
+router.route('/')
+  .get(getUsers)
+  .post(createUser);
+router.route('/:id')
+  .put(updateUser)
+  .delete(deleteUser);
 
 module.exports = router;

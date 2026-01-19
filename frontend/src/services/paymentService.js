@@ -1,5 +1,5 @@
 // frontend/src/services/paymentService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get all payments for user
 export const getPayments = async (params = {}) => {

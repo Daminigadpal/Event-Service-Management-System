@@ -119,19 +119,9 @@ const login = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Find user in MongoDB
-    console.log('🔍 Searching for user in MongoDB...');
+    // Check user in MongoDB
+    console.log('🔍 Checking user in database...');
     const user = await User.findOne({ email }).select('+password');
-    console.log('👤 User found:', user ? 'Yes' : 'No');
-    
-    if (user) {
-      console.log('📋 User details:');
-      console.log('  ID:', user._id);
-      console.log('  Name:', user.name);
-      console.log('  Email:', user.email);
-      console.log('  Role:', user.role);
-      console.log('  Password exists:', user.password ? 'Yes' : 'No');
-    }
 
     if (!user) {
       console.log('❌ User not found in database');
@@ -141,11 +131,12 @@ const login = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check password (User model has matchPassword method)
-    console.log('🔐 Comparing passwords...');
+    console.log('✅ User found:', user.name);
+
+    // Check password
+    console.log('🔐 Checking password...');
     const isMatch = await user.matchPassword(password);
-    console.log('🔑 Password match result:', isMatch ? 'Success' : 'Failed');
-    
+
     if (!isMatch) {
       console.log('❌ Password does not match');
       return res.status(401).json({
@@ -154,7 +145,9 @@ const login = asyncHandler(async (req, res) => {
       });
     }
 
-    // Generate proper JWT token
+    console.log('✅ Password matched');
+
+    // Generate JWT token
     console.log('🎫 Generating JWT token...');
     const token = jwt.sign(
       { id: user._id, email: user.email },
@@ -180,6 +173,7 @@ const login = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error('❌ Login error:', error.message);
     console.error('📋 Full error:', error);
+    console.error('📋 Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       error: "Server error during login"

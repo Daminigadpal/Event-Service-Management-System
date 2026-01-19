@@ -21,10 +21,10 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5175', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176', 'http://localhost:5177', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5175', 'http://127.0.0.1:5176', 'http://127.0.0.1:5177', 'http://127.0.0.1:61212', 'http://localhost:3000', 'http://127.0.0.1:53640'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires']
 }));
 
 app.use(express.json());
@@ -51,6 +51,22 @@ app.use("/api/v1/event-reminders", eventReminderRoutes);
 app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/event-executions", eventExecutionRoutes);
 // app.use("/api/v1/service-packages", servicePackageRoutes);
+
+// Public event preferences endpoint for admin dashboard
+app.get("/api/v1/public-event-preferences", async (req, res) => {
+  try {
+    const EventPreference = require('./src/models/EventPreference.js');
+    const preferences = await EventPreference.find({}).populate('user', 'name email');
+    res.json({
+      success: true,
+      count: preferences.length,
+      data: preferences
+    });
+  } catch (error) {
+    console.error('Error fetching event preferences:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Health check
 app.get("/", (req, res) => {

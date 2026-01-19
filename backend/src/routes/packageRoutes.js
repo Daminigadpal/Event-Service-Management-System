@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const auth = require("../middleware/authMiddleware");
+const { protect } = require("../middleware/auth.js");
 const role = require("../middleware/roleMiddleware");
 const packageCtrl = require("../controllers/packageController.js");
 
-router.post("/", auth, role("ADMIN"), packageCtrl.createPackage);
+router.post("/", protect, role("ADMIN"), packageCtrl.createPackage);
 router.get("/", packageCtrl.getPackages);
-router.put("/:id", auth, role("ADMIN"), packageCtrl.updatePackage);
-router.delete("/:id", auth, role("ADMIN"), packageCtrl.deletePackage);
+router.put("/:id", protect, role("ADMIN"), packageCtrl.updatePackage);
+router.delete("/:id", protect, role("ADMIN"), packageCtrl.deletePackage);
 
 module.exports = router;

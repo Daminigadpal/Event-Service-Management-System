@@ -1,32 +1,35 @@
 // frontend/src/services/eventPreferenceService.js
-import api from '../utils/api';
+import api from '../api';
 
-// Get all event preferences
+// Get event preferences for current user
 export const getEventPreferences = async () => {
   try {
-    console.log('Making GET request to /event-preferences');
-    const token = localStorage.getItem('token');
-    console.log('Token available:', !!token);
-    
-    // Check if user is admin and use admin endpoint
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const isAdmin = user.role === 'admin';
-    console.log('User data:', user);
-    console.log('Is admin:', isAdmin);
-    
-    const endpoint = isAdmin ? 'event-preferences/all' : 'event-preferences';
-    console.log(`Using ${isAdmin ? 'admin' : 'user'} endpoint: ${endpoint}`);
-    
-    // Add cache-busting timestamp
-    const timestamp = new Date().getTime();
-    const response = await api.get(`${endpoint}?_t=${timestamp}`);
+    console.log('Making GET request to /event-preferences for user data');
+
+    const response = await api.get('event-preferences');
     console.log('GET request successful:', response.data);
     return response.data;
   } catch (error) {
     console.error('GET request failed:', error.message);
     console.error('Error details:', error.response?.status, error.response?.data);
     console.error('Full error object:', error);
-    throw error; // Don't use mock data, show real error
+    throw error;
+  }
+};
+
+// Get all event preferences (admin only)
+export const getAllEventPreferences = async () => {
+  try {
+    console.log('Making GET request to /event-preferences/all for admin data');
+
+    const response = await api.get('event-preferences/all');
+    console.log('GET all request successful:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('GET all request failed:', error.message);
+    console.error('Error details:', error.response?.status, error.response?.data);
+    console.error('Full error object:', error);
+    throw error;
   }
 };
 

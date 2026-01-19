@@ -1,5 +1,5 @@
 // frontend/src/services/userAvailabilityService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get user availability (for viewing their own schedule)
 export const getUserAvailability = async (params = {}) => {

@@ -1,5 +1,5 @@
 // frontend/src/services/servicePackageService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get all services
 export const getServices = async (filters = {}) => {

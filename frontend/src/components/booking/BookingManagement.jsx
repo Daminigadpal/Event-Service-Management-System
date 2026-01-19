@@ -212,15 +212,13 @@ const handleCreateBooking = async () => {
         <Typography variant="h5">
           {user?.role === 'admin' ? 'All Bookings' : 'My Bookings'}
         </Typography>
-        {user?.role === 'user' && (
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />}
-            onClick={handleOpenDialog}
-          >
-            New Booking
-          </Button>
-        )}
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleOpenDialog}
+        >
+          New Booking
+        </Button>
       </Box>
 
       {error && bookings.length === 0 && (

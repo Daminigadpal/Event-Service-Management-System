@@ -6,7 +6,7 @@ async function createTestData() {
     
     // First login to get a token
     const loginResponse = await axios.post('http://localhost:5000/api/v1/auth/login', {
-      email: 'admin@gmail.com',
+      email: 'sejal@gmail.com',
       password: 'admin123'
     });
     

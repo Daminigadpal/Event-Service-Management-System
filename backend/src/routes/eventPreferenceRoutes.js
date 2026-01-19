@@ -12,11 +12,11 @@ const router = express.Router();
 
 router
   .route('/')
-  .get(getEventPreferences)
-  .post(createEventPreference)
-  .put(updateEventPreferences);
+  .get(protect, getEventPreferences)
+  .post(protect, createEventPreference)
+  .put(protect, updateEventPreferences);
 
 // Admin route to get all event preferences
-router.get('/all', getAllEventPreferences);
+router.get('/all', protect, getAllEventPreferences);
 
 module.exports = router;

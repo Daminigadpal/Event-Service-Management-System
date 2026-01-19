@@ -2,10 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import DiscountCodeManagement from '../discount/DiscountCodeManagement';
+import DiscountService from '../../services/discountService';
 
 const ServiceManagement = () => {
   const [services, setServices] = useState([]);
   const [packages, setPackages] = useState([]);
+  const [discountCodes, setDiscountCodes] = useState([]);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [showPackageForm, setShowPackageForm] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -22,7 +25,8 @@ const ServiceManagement = () => {
       basePrice: 5000,
       isActive: true,
       duration: '4 hours',
-      requirements: 'Professional camera, lighting equipment'
+      requirements: 'Professional camera, lighting equipment',
+      discountEligible: true
     },
     {
       id: 2,
@@ -32,7 +36,8 @@ const ServiceManagement = () => {
       basePrice: 8000,
       isActive: true,
       duration: '6 hours',
-      requirements: 'Professional camera, video editing software'
+      requirements: 'Professional camera, video editing software',
+      discountEligible: true
     },
     {
       id: 3,
@@ -42,7 +47,8 @@ const ServiceManagement = () => {
       basePrice: 3000,
       isActive: false,
       duration: '3 hours',
-      requirements: 'Decorative materials, setup time'
+      requirements: 'Decorative materials, setup time',
+      discountEligible: false
     }
   ];
 
@@ -54,7 +60,8 @@ const ServiceManagement = () => {
       price: 10000,
       duration: '4 hours',
       includedServices: ['Photography', 'Basic Decoration'],
-      isActive: true
+      isActive: true,
+      discountEligible: true
     },
     {
       id: 2,
@@ -63,7 +70,8 @@ const ServiceManagement = () => {
       price: 25000,
       duration: '8 hours',
       includedServices: ['Photography', 'Videography', 'Premium Decoration'],
-      isActive: true
+      isActive: true,
+      discountEligible: true
     },
     {
       id: 3,
@@ -72,13 +80,60 @@ const ServiceManagement = () => {
       price: 50000,
       duration: '12 hours',
       includedServices: ['Photography', 'Videography', 'Decoration', 'Catering'],
-      isActive: false
+      isActive: false,
+      discountEligible: false
+    }
+  ];
+
+  const mockDiscountCodes = [
+    {
+      id: 1,
+      code: 'WELCOME10',
+      type: 'percentage',
+      value: 10,
+      minAmount: 5000,
+      maxDiscount: 2000,
+      usageLimit: 100,
+      usedCount: 25,
+      startDate: '2024-01-01',
+      endDate: '2024-12-31',
+      isActive: true,
+      applicableTo: 'all'
+    },
+    {
+      id: 2,
+      code: 'SUMMER20',
+      type: 'percentage',
+      value: 20,
+      minAmount: 10000,
+      maxDiscount: 5000,
+      usageLimit: 50,
+      usedCount: 12,
+      startDate: '2024-06-01',
+      endDate: '2024-08-31',
+      isActive: true,
+      applicableTo: 'packages'
+    },
+    {
+      id: 3,
+      code: 'FLAT500',
+      type: 'fixed',
+      value: 500,
+      minAmount: 3000,
+      maxDiscount: null,
+      usageLimit: 200,
+      usedCount: 45,
+      startDate: '2024-01-01',
+      endDate: '2024-06-30',
+      isActive: false,
+      applicableTo: 'services'
     }
   ];
 
   useEffect(() => {
     setServices(mockServices);
     setPackages(mockPackages);
+    setDiscountCodes(mockDiscountCodes);
   }, []);
 
   const handleServiceSubmit = (e) => {
@@ -91,7 +146,8 @@ const ServiceManagement = () => {
       basePrice: parseFloat(formData.get('basePrice')),
       isActive: formData.get('isActive') === 'true',
       duration: formData.get('duration'),
-      requirements: formData.get('requirements')
+      requirements: formData.get('requirements'),
+      discountEligible: formData.get('discountEligible') === 'true'
     };
 
     if (editingService) {
@@ -123,7 +179,8 @@ const ServiceManagement = () => {
       description: formData.get('description'),
       price: parseFloat(formData.get('price')),
       duration: formData.get('duration'),
-      includedServices: formData.getAll('includedServices')
+      includedServices: formData.getAll('includedServices'),
+      discountEligible: formData.get('discountEligible') === 'true'
     };
 
     if (editingPackage) {
@@ -321,7 +378,7 @@ const ServiceManagement = () => {
             </div>
 
             {/* Requirements */}
-            <div className="col-12">
+            <div className="col-md-6">
               <label className="form-label fw-bold text-dark">
                 <i className="bi bi-exclamation-triangle-fill text-primary me-2"></i>
                 Requirements
@@ -334,6 +391,23 @@ const ServiceManagement = () => {
                 placeholder="List any special requirements or equipment needed"
                 required
               />
+            </div>
+
+            {/* Discount Eligibility */}
+            <div className="col-md-6">
+              <label className="form-label fw-bold text-dark">
+                <i className="bi bi-tag-fill text-primary me-2"></i>
+                Discount Eligibility
+              </label>
+              <select
+                name="discountEligible"
+                defaultValue={editingService?.discountEligible?.toString() || 'true'}
+                className="form-select form-select-lg border-2 border-primary rounded-lg"
+                required
+              >
+                <option value="true">✅ Eligible for Discounts</option>
+                <option value="false">❌ Not Eligible for Discounts</option>
+              </select>
             </div>
           </div>
 
@@ -460,7 +534,7 @@ const ServiceManagement = () => {
             </div>
 
             {/* Status */}
-            <div className="col-md-6">
+            <div className="col-md-4">
               <label className="form-label fw-bold text-dark">
                 <i className="bi bi-toggle-on text-primary me-2"></i>
                 Status
@@ -473,6 +547,23 @@ const ServiceManagement = () => {
               >
                 <option value="true">✅ Active</option>
                 <option value="false">❌ Inactive</option>
+              </select>
+            </div>
+
+            {/* Discount Eligibility */}
+            <div className="col-md-4">
+              <label className="form-label fw-bold text-dark">
+                <i className="bi bi-tag-fill text-primary me-2"></i>
+                Discount Eligibility
+              </label>
+              <select
+                name="discountEligible"
+                defaultValue={editingPackage?.discountEligible?.toString() || 'true'}
+                className="form-select form-select-lg border-2 border-primary rounded-lg"
+                required
+              >
+                <option value="true">✅ Eligible for Discounts</option>
+                <option value="false">❌ Not Eligible for Discounts</option>
               </select>
             </div>
 
@@ -538,26 +629,19 @@ const ServiceManagement = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    <div className="min-h-screen bg-white">
       <div className="container-fluid py-4">
-        {/* Animated Background Elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-          <div className="absolute bottom-20 left-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
-        </div>
-
         {/* Main Content */}
         <div className="relative z-10">
           {/* Header */}
           <div className="text-center mb-6">
             <div className="inline-block">
-              <h1 className="display-4 fw-bold text-white mb-3 animate__animated animate__fadeInDown">
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600">
+              <h1 className="display-4 fw-bold text-dark mb-3 animate__animated animate__fadeInDown">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                   Service & Package Management
                 </span>
               </h1>
-              <p className="lead text-light animate__animated animate__fadeInUp">
+              <p className="lead text-dark animate__animated animate__fadeInUp">
                 Manage your premium event services and packages with style
               </p>
             </div>
@@ -566,7 +650,7 @@ const ServiceManagement = () => {
           {/* Tab Navigation */}
           <div className="row justify-content-center mb-5">
             <div className="col-md-8">
-              <div className="card bg-dark bg-opacity-50 backdrop-blur-lg border-0 shadow-2xl">
+              <div className="card bg-white border-0 shadow-lg">
                 <div className="card-body p-2">
                   <div className="btn-group w-100" role="group">
                     <button
@@ -574,7 +658,7 @@ const ServiceManagement = () => {
                       className={`btn btn-lg flex-fill transition-all duration-300 ${
                         activeTab === 'services'
                           ? 'btn-primary bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg transform scale-105'
-                          : 'btn-outline-light hover:bg-white hover:bg-opacity-10'
+                          : 'btn-outline-primary hover:bg-primary hover:bg-opacity-10'
                       }`}
                     >
                       <div className="d-flex align-items-center justify-content-center">
@@ -587,12 +671,25 @@ const ServiceManagement = () => {
                       className={`btn btn-lg flex-fill transition-all duration-300 ${
                         activeTab === 'packages'
                           ? 'btn-primary bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg transform scale-105'
-                          : 'btn-outline-light hover:bg-white hover:bg-opacity-10'
+                          : 'btn-outline-primary hover:bg-primary hover:bg-opacity-10'
                       }`}
                     >
                       <div className="d-flex align-items-center justify-content-center">
                         <i className="bi bi-box-seam-fill me-2"></i>
                         <span className="fw-bold">Packages</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('discounts')}
+                      className={`btn btn-lg flex-fill transition-all duration-300 ${
+                        activeTab === 'discounts'
+                          ? 'btn-primary bg-gradient-to-r from-green-600 to-teal-600 shadow-lg transform scale-105'
+                          : 'btn-outline-primary hover:bg-primary hover:bg-opacity-10'
+                      }`}
+                    >
+                      <div className="d-flex align-items-center justify-content-center">
+                        <i className="bi bi-tag-fill me-2"></i>
+                        <span className="fw-bold">Discount Codes</span>
                       </div>
                     </button>
                   </div>
@@ -619,7 +716,7 @@ const ServiceManagement = () => {
               <div className="row g-4">
                 {services.map((service, index) => (
                   <div key={service.id} className="col-lg-4 col-md-6 mb-4">
-                    <div className="card h-100 bg-white bg-opacity-90 backdrop-blur-md border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:rotate-1 animate__animated animate__fadeInUp border border-white border-opacity-30" 
+                    <div className="card h-100 bg-white border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:rotate-1 animate__animated animate__fadeInUp" 
                          style={{animationDelay: `${index * 100}ms`}}>
                       {/* Gradient Header */}
                       <div className="card-header bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 border-0 p-3">
@@ -630,20 +727,20 @@ const ServiceManagement = () => {
                           </h5>
                           <span className={`badge rounded-pill ${
                             service.isActive 
-                              ? 'bg-success bg-opacity-90 text-white' 
-                              : 'bg-danger bg-opacity-90 text-white'
+                              ? 'bg-success text-white' 
+                              : 'bg-danger text-white'
                           }`}>
                             {service.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="card-body text-white">
+                      <div className="card-body text-dark">
                         <div className="mb-3">
-                          <span className="badge bg-info bg-opacity-25 text-info mb-2">
+                          <span className="badge bg-info text-white mb-2">
                             <i className="bi bi-tag-fill me-1"></i>{service.type}
                           </span>
-                          <p className="text-light small">{service.description}</p>
+                          <p className="text-dark small">{service.description}</p>
                         </div>
                         
                         <div className="row text-center mb-3">
@@ -661,12 +758,32 @@ const ServiceManagement = () => {
                           </div>
                         </div>
                         
-                        <div className="bg-warning bg-opacity-20 rounded-lg p-2 mb-3">
-                          <small className="text-warning fw-bold">
+                        {/* Applicable Discounts */}
+                        <div className="mb-3">
+                          <h6 className="text-success fw-bold mb-2">
+                            <i className="bi bi-tag-fill me-2"></i>Available Discounts
+                          </h6>
+                          <div className="d-flex flex-wrap gap-1">
+                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'service').slice(0, 2).map((discount, index) => (
+                              <span key={discount.id} className="badge bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-pill px-2 py-1">
+                                <i className="bi bi-percent me-1"></i>
+                                {DiscountService.formatDiscountText(discount)}
+                              </span>
+                            ))}
+                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'service').length > 2 && (
+                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1">
+                                +{DiscountService.getApplicableDiscountCodes(discountCodes, 'service').length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-light rounded-lg p-2 mb-3">
+                          <small className="text-dark fw-bold">
                             <i className="bi bi-exclamation-triangle-fill me-1"></i>
                             Requirements
                           </small>
-                          <p className="small text-light mb-0">{service.requirements}</p>
+                          <div className="text-muted small">{service.requirements}</div>
                         </div>
                         
                         {/* Action Buttons */}
@@ -721,14 +838,14 @@ const ServiceManagement = () => {
               <div className="row g-4">
                 {packages.map((pkg, index) => (
                   <div key={pkg.id} className="col-lg-4 col-md-6 mb-4">
-                    <div className="card h-100 bg-gradient-to-br from-purple-900 via-pink-900 to-indigo-900 border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:-translate-y-2 animate__animated animate__fadeInUp" 
+                    <div className="card h-100 bg-white border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:-translate-y-2 animate__animated animate__fadeInUp" 
                          style={{animationDelay: `${index * 150}ms`}}>
                       {/* Special Badge */}
                       <div className="position-absolute top-0 end-0 m-3">
                         <span className={`badge rounded-pill fs-6 ${
                           pkg.isActive 
-                            ? 'bg-success bg-opacity-90 text-white shadow-lg' 
-                            : 'bg-danger bg-opacity-90 text-white shadow-lg'
+                            ? 'bg-success text-white shadow-lg' 
+                            : 'bg-danger text-white shadow-lg'
                         }`}>
                           <i className={`bi ${pkg.isActive ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} me-1`}></i>
                           {pkg.isActive ? 'Active' : 'Inactive'}
@@ -741,14 +858,14 @@ const ServiceManagement = () => {
                           <i className="bi bi-box-seam-fill display-4 text-white"></i>
                         </div>
                         <h4 className="card-title text-white mb-2 fw-bold">{pkg.name}</h4>
-                        <div className="bg-white bg-opacity-20 rounded-pill px-3 py-1 d-inline-block">
-                          <small className="text-white fw-bold">
+                        <div className="bg-light rounded-pill px-3 py-1 d-inline-block">
+                          <small className="text-dark fw-bold">
                             <i className="bi bi-clock-fill me-1"></i>{pkg.duration}
                           </small>
                         </div>
                       </div>
                       
-                      <div className="card-body text-white">
+                      <div className="card-body text-dark">
                         <div className="text-center mb-4">
                           <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-3 mb-3">
                             <span className="display-6 fw-bold text-dark">₹{pkg.price.toLocaleString()}</span>
@@ -756,11 +873,31 @@ const ServiceManagement = () => {
                           </div>
                         </div>
                         
+                        {/* Applicable Discounts */}
                         <div className="mb-4">
-                          <h6 className="text-warning fw-bold mb-3">
+                          <h6 className="text-success fw-bold mb-2">
+                            <i className="bi bi-tag-fill me-2"></i>Available Discounts
+                          </h6>
+                          <div className="d-flex flex-wrap gap-1">
+                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'package').slice(0, 2).map((discount, index) => (
+                              <span key={discount.id} className="badge bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-pill px-2 py-1">
+                                <i className="bi bi-percent me-1"></i>
+                                {DiscountService.formatDiscountText(discount)}
+                              </span>
+                            ))}
+                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'package').length > 2 && (
+                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1">
+                                +{DiscountService.getApplicableDiscountCodes(discountCodes, 'package').length - 2} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <h6 className="text-primary fw-bold mb-3">
                             <i className="bi bi-stars me-2"></i>Package Description
                           </h6>
-                          <p className="text-light small">{pkg.description}</p>
+                          <p className="text-dark small">{pkg.description}</p>
                         </div>
                         
                         <div className="mb-4">
@@ -808,6 +945,13 @@ const ServiceManagement = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Discount Codes Tab */}
+          {activeTab === 'discounts' && (
+            <div className="container-fluid">
+              <DiscountCodeManagement />
             </div>
           )}
         </div>

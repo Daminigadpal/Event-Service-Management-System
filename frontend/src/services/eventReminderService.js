@@ -1,5 +1,5 @@
 // frontend/src/services/eventReminderService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get reminders for user
 export const getReminders = async (params = {}) => {

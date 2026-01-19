@@ -12,7 +12,7 @@ import {
   Container,
   Alert
 } from '@mui/material';
-import api from '../utils/api';
+import api from '../services/api';
 
 const Login = () => {
   const { login } = useAuth();
@@ -50,6 +50,7 @@ const Login = () => {
     }
 
     try {
+      console.log('API baseURL:', api.defaults.baseURL);
       const response = await api.post('/auth/login', {
         email: formData.email,
         password: formData.password

@@ -11,9 +11,18 @@ const asyncHandler = (fn) => (req, res, next) =>
 const getPayments = asyncHandler(async (req, res, next) => {
   try {
     console.log('Getting payments for user:', req.user.id);
+    console.log('User role:', req.user.role);
 
-    // Filter payments by user
-    const payments = await Payment.find({ user: req.user.id }).sort({ paymentDate: -1 });
+    let payments;
+    
+    // If admin, get all payments, otherwise get user's payments only
+    if (req.user.role === 'admin') {
+      payments = await Payment.find({}).populate('user', 'name email').sort({ paymentDate: -1 });
+      console.log('Admin user - getting all payments');
+    } else {
+      payments = await Payment.find({ user: req.user.id }).sort({ paymentDate: -1 });
+      console.log('Regular user - getting own payments');
+    }
 
     console.log('Found payments:', payments.length);
 

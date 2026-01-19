@@ -1,5 +1,5 @@
 // frontend/src/services/staffAvailabilityService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get staff availability
 export const getStaffAvailability = async (params = {}) => {

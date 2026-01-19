@@ -1,5 +1,5 @@
 // frontend/src/services/eventExecutionService.js
-import api from '../utils/api';
+import api from '../api';
 
 // Get all event executions for user
 export const getEventExecutions = async () => {

@@ -50,7 +50,8 @@ import {
   getPaymentSummary
 } from '../../services/paymentService.js';
 import {
-  getBookings
+  getBookings,
+  getAllBookings
 } from '../../services/bookingService.js';
 import {
   getEventPreferences
@@ -82,22 +83,39 @@ const PaymentManagement = () => {
   });
 
   console.log('PaymentManagement component rendering'); // Debug log
+  console.log('🔍 PAYMENT MANAGEMENT: Current state:', {
+    payments: payments.length,
+    invoices: invoices.length,
+    bookings: bookings.length,
+    userProfile: Object.keys(userProfile).length,
+    eventPreferences: Object.keys(eventPreferences).length,
+    userRole: user?.role
+  });
 
   useEffect(() => {
-    console.log('PaymentManagement useEffect triggered');
+    console.log('🔍 PAYMENT MANAGEMENT: useEffect triggered with user role:', user?.role);
     fetchPayments();
     fetchInvoices();
     fetchBookings(); // Fetch bookings data
     fetchUserProfile(); // Fetch user profile
     fetchEventPreferences(); // Fetch event preferences
-  }, []);
+  }, [user?.role]); // Add user role as dependency
 
   const fetchBookings = async () => {
     try {
-      // Fetch real bookings from database
-      const response = await getBookings();
+      console.log('🔍 BOOKINGS: Fetching bookings for user:', user?.role);
+      
+      // Fetch all bookings if admin, otherwise fetch user's bookings only
+      const response = user?.role === 'admin' 
+        ? await getAllBookings() 
+        : await getBookings();
+        
+      console.log('🔍 BOOKINGS: API Response:', response);
+      
       if (response.success) {
-        setBookings(Array.isArray(response.data) ? response.data : []);
+        const bookingsData = Array.isArray(response.data) ? response.data : [];
+        console.log('🔍 BOOKINGS: Setting bookings:', bookingsData.length, 'items');
+        setBookings(bookingsData);
       } else {
         console.error('Failed to fetch bookings:', response.message);
         setBookings([]);
@@ -169,15 +187,26 @@ const PaymentManagement = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('🔍 PAYMENTS: Fetching payments...');
+      console.log('🔍 PAYMENTS: User role:', user?.role);
+      
       const response = await getPayments();
+      console.log('🔍 PAYMENTS: API Response:', response);
+      console.log('🔍 PAYMENTS: Response success:', response.success);
+      console.log('🔍 PAYMENTS: Response data:', response.data);
+      
       if (response.success) {
-        setPayments(Array.isArray(response.data) ? response.data : []);
+        const paymentsData = Array.isArray(response.data) ? response.data : [];
+        console.log('🔍 PAYMENTS: Setting payments:', paymentsData.length, 'items');
+        console.log('🔍 PAYMENTS: Payments data sample:', paymentsData.slice(0, 2));
+        setPayments(paymentsData);
       } else {
-        console.error('Failed to fetch payments:', response.message);
+        console.error('🔍 PAYMENTS: Failed to fetch payments:', response.message);
         setPayments([]);
       }
     } catch (err) {
-      console.error('Error fetching payments:', err);
+      console.error('🔍 PAYMENTS: Error fetching payments:', err);
+      console.error('🔍 PAYMENTS: Error details:', err.response?.data);
       setPayments([]);
     } finally {
       setLoading(false);

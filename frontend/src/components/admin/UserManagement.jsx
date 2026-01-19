@@ -5,7 +5,7 @@ import {
   TableContainer, TableHead, TableRow, Chip, Button,
   IconButton, Tooltip, TextField, Dialog, DialogTitle,
   DialogContent, DialogActions, FormControl, InputLabel,
-  Select, MenuItem
+  Select, MenuItem, CircularProgress
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -13,13 +13,28 @@ import {
   PersonAdd as AddIcon
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
-import api from '../../services/api';
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser
+} from '../../services/userService';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+    department: 'General',
+    phone: '',
+    address: ''
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -29,33 +44,22 @@ const UserManagement = () => {
     try {
       setLoading(true);
       console.log('Fetching all users...');
-      
-      // Get all users from database (unprotected endpoint)
-      const response = await api.get('/public-users');
+
+      const response = await getAllUsers();
       console.log('Users response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
-      
-      if (response.data && response.data.success) {
-        setUsers(response.data.data);
-        console.log('✅ Users loaded from API:', response.data.data.length);
+
+      if (response && response.success) {
+        setUsers(response.data);
+        console.log('✅ Users loaded from API:', response.data.length);
       } else {
-        console.log('❌ API response not successful, using fallback data');
-        // Fallback: Get users from existing data
-        const mockUsers = [
-          { _id: '1', name: 'Jeet', email: 'jeet@gmail.com', role: 'user', department: 'General', createdAt: new Date() },
-          { _id: '2', name: 'Anuj', email: 'om@gamil.com', role: 'staff', department: 'Operations', createdAt: new Date() },
-          { _id: '3', name: 'ram', email: 'ram@gmail.com', role: 'user', department: 'General', createdAt: new Date() },
-          { _id: '4', name: 'Test User', email: 'test@example.com', role: 'user', department: 'General', createdAt: new Date() },
-          { _id: '5', name: 'Staff Member', email: 'staff@gmail.com', role: 'staff', department: 'Operations', createdAt: new Date() },
-          { _id: '6', name: 'sejal', email: 'sejal@gmail.com', role: 'admin', department: 'Administration', createdAt: new Date() }
-        ];
-        setUsers(mockUsers);
-        console.log('Using fallback users data');
+        console.log('❌ API response not successful');
+        setUsers([]);
+        toast.error('Failed to fetch users from API');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
       console.error('Error details:', error.response?.status, error.response?.data);
+      setUsers([]);
       toast.error('Failed to fetch users: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
@@ -76,15 +80,69 @@ const UserManagement = () => {
     setEditDialogOpen(true);
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
-      toast.info('Delete user functionality coming soon');
+      try {
+        await deleteUser(userId);
+        toast.success('User deleted successfully');
+        fetchUsers(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete user');
+      }
     }
   };
 
   const handleCloseDialog = () => {
     setEditDialogOpen(false);
     setSelectedUser(null);
+  };
+
+  const handleCloseCreateDialog = () => {
+    setCreateDialogOpen(false);
+    setNewUser({
+      name: '',
+      email: '',
+      password: '',
+      role: 'user',
+      department: 'General',
+      phone: '',
+      address: ''
+    });
+  };
+
+  const handleCreateUser = async () => {
+    try {
+      if (!newUser.name || !newUser.email || !newUser.password) {
+        toast.error('Name, email, and password are required');
+        return;
+      }
+
+      await createUser(newUser);
+      toast.success('User created successfully');
+      handleCloseCreateDialog();
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error(error.response?.data?.message || 'Failed to create user');
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      if (!selectedUser.name || !selectedUser.email) {
+        toast.error('Name and email are required');
+        return;
+      }
+
+      await updateUser(selectedUser._id, selectedUser);
+      toast.success('User updated successfully');
+      handleCloseDialog();
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error(error.response?.data?.message || 'Failed to update user');
+    }
   };
 
   if (loading) {
@@ -102,7 +160,7 @@ const UserManagement = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => toast.info('Add user functionality coming soon')}
+          onClick={() => setCreateDialogOpen(true)}
         >
           Add User
         </Button>
@@ -187,6 +245,24 @@ const UserManagement = () => {
             onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
             sx={{ mb: 2 }}
           />
+          <TextField
+            margin="dense"
+            label="Phone"
+            fullWidth
+            variant="outlined"
+            value={selectedUser?.phone || ''}
+            onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Address"
+            fullWidth
+            variant="outlined"
+            value={selectedUser?.address || ''}
+            onChange={(e) => setSelectedUser({...selectedUser, address: e.target.value})}
+            sx={{ mb: 2 }}
+          />
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Role</InputLabel>
             <Select
@@ -198,14 +274,102 @@ const UserManagement = () => {
               <MenuItem value="admin">Admin</MenuItem>
             </Select>
           </FormControl>
+          <TextField
+            margin="dense"
+            label="Department"
+            fullWidth
+            variant="outlined"
+            value={selectedUser?.department || ''}
+            onChange={(e) => setSelectedUser({...selectedUser, department: e.target.value})}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={() => {
-            toast.info('Update user functionality coming soon');
-            handleCloseDialog();
-          }} variant="contained" color="primary">
+          <Button onClick={handleUpdateUser} variant="contained" color="primary">
             Update
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={createDialogOpen} onClose={handleCloseCreateDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New User</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Name"
+            fullWidth
+            variant="outlined"
+            value={newUser.name}
+            onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Email"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={newUser.email}
+            onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={newUser.password}
+            onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+            required
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Phone"
+            fullWidth
+            variant="outlined"
+            value={newUser.phone}
+            onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Address"
+            fullWidth
+            variant="outlined"
+            value={newUser.address}
+            onChange={(e) => setNewUser({...newUser, address: e.target.value})}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={newUser.role}
+              onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+            >
+              <MenuItem value="user">User</MenuItem>
+              <MenuItem value="staff">Staff</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            margin="dense"
+            label="Department"
+            fullWidth
+            variant="outlined"
+            value={newUser.department}
+            onChange={(e) => setNewUser({...newUser, department: e.target.value})}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCreateDialog}>Cancel</Button>
+          <Button onClick={handleCreateUser} variant="contained" color="primary">
+            Create User
           </Button>
         </DialogActions>
       </Dialog>

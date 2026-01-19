@@ -11,7 +11,7 @@ const checkUser = async () => {
     console.log('✅ Connected to MongoDB');
     
     // Find user by email
-    const user = await User.findOne({ email: 'sai@gmail.com' }).select('+password');
+    const user = await User.findOne({ email: 'staff@gmail.com' }).select('+password');
     
     if (user) {
       console.log('✅ User found in database:');
@@ -23,7 +23,7 @@ const checkUser = async () => {
       console.log('  Password hash length:', user.password ? user.password.length : 0);
       
       // Test password match
-      const isMatch = await user.matchPassword('sai123');
+      const isMatch = await user.matchPassword('8 chars');
       console.log('🔑 Password match result:', isMatch ? 'Success' : 'Failed');
       
     } else {

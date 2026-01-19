@@ -3,10 +3,13 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: '/api/v1', // Use Vite proxy
+  baseURL: 'http://localhost:5000/api/v1', // Direct connection to backend
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   },
   timeout: 10000, // 10 seconds
   withCredentials: true // Important for cookies, authorization headers with HTTPS
