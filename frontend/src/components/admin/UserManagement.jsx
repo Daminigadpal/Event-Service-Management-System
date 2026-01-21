@@ -1,5 +1,6 @@
 // frontend/src/components/admin/UserManagement.jsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Chip, Button,
@@ -21,6 +22,7 @@ import {
 } from '../../services/userService';
 
 const UserManagement = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -35,6 +37,17 @@ const UserManagement = () => {
     phone: '',
     address: ''
   });
+
+  // Check if current user is admin
+  if (!user || user.role !== 'admin') {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Typography variant="h6" color="error">
+          Access Denied: Only administrators can access User Management
+        </Typography>
+      </Box>
+    );
+  }
 
   useEffect(() => {
     fetchUsers();

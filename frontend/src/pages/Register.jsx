@@ -13,7 +13,10 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  Checkbox,
+  ListItemText,
+  OutlinedInput
 } from '@mui/material';
 import toast from "react-hot-toast";
 
@@ -25,7 +28,16 @@ const Register = () => {
     email: "",
     password: "",
     role: "user", // default role
+    services: [], // services array
   });
+
+  const services = [
+    'photographers',
+    'videographers', 
+    'decorators',
+    'DJs',
+    'makeup artists'
+  ];
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,10 +49,33 @@ const Register = () => {
     setError('');
   };
 
+  const handleServiceChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    setFormData({
+      ...formData,
+      services: typeof value === 'string' ? value.split(',') : value,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Client-side validation
+    if (!formData.name || !formData.email || !formData.password) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
 
     console.log('Submitting registration form with data:', formData);
 
@@ -126,6 +161,11 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 disabled={loading}
+                inputProps={{ minLength: 6, required: true }}
+                error={formData.password && formData.password.length < 6}
+                helperText={formData.password && formData.password.length < 6 
+                  ? "Password must be at least 6 characters long" 
+                  : "Password must be at least 6 characters long"}
               />
 
               <FormControl fullWidth margin="normal">
@@ -143,6 +183,28 @@ const Register = () => {
                   <MenuItem value="staff">Staff</MenuItem>
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="event_manager">Event Manager</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth margin="normal">
+                <InputLabel id="services-label">Services</InputLabel>
+                <Select
+                  labelId="services-label"
+                  id="services"
+                  name="services"
+                  multiple
+                  value={formData.services}
+                  onChange={handleServiceChange}
+                  input={<OutlinedInput label="Services" />}
+                  renderValue={(selected) => selected.join(', ')}
+                  disabled={loading}
+                >
+                  {services.map((service) => (
+                    <MenuItem key={service} value={service}>
+                      <Checkbox checked={formData.services.indexOf(service) > -1} />
+                      <ListItemText primary={service} />
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
 

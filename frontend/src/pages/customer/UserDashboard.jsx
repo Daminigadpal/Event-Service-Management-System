@@ -68,10 +68,15 @@ const UserDashboard = () => {
   const { logout, user, updateUserProfile } = useAuth();
   const dashboardRef = useRef();
 
+  // Check if current user is admin - moved to component level
+  const isAdmin = user && user.role === 'admin';
+  console.log('UserDashboard - User:', user?.name, 'Role:', user?.role, 'IsAdmin:', isAdmin);
+
   // Load user profile data
   useEffect(() => {
     console.log(' User data loaded:', user);
     if (user) {
+      console.log(' Setting profile data with role:', user.role);
       const profileData = {
         name: user.name || '',
         email: user.email || '',
@@ -249,7 +254,7 @@ const UserDashboard = () => {
                     textShadow: '0px 2px 4px rgba(0,0,0,0.3)'
                   }}
                 >
-                  {user?.name || 'User'} Dashboard
+                  {user?.name || 'User'} - {user?.role || 'user'}{user?.services?.includes('photographers') && ' - photographers'}
                 </Typography>
               </motion.div>
               
@@ -333,70 +338,6 @@ const UserDashboard = () => {
             </Box>
           </Container>
         </Box>
-      </motion.div>
-
-      {/* Stats Cards Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-      >
-        <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
-          <Grid container spacing={3}>
-            {[
-              { label: 'Total Bookings', value: stats.totalBookings, icon: <ScheduleIcon />, color: 'primary' },
-              { label: 'Upcoming Events', value: stats.upcomingEvents, icon: <EventIcon />, color: 'success' },
-              { label: 'Completed Events', value: stats.completedEvents, icon: <CheckCircleIcon />, color: 'info' },
-              { label: 'Total Payments', value: `$${stats.totalPayments}`, icon: <TrendingUpIcon />, color: 'warning' }
-            ].map((stat, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
-                <motion.div
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Card sx={{
-                    background: `linear-gradient(135deg, ${alpha(theme.palette[stat.color].main, 0.1)}, ${alpha(theme.palette[stat.color].dark, 0.05)})`,
-                    border: `2px solid ${alpha(theme.palette[stat.color].main, 0.2)}`,
-                    borderRadius: 3,
-                    boxShadow: theme.shadows[4],
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      boxShadow: theme.shadows[8],
-                      border: `2px solid ${alpha(theme.palette[stat.color].main, 0.4)}`
-                    }
-                  }}>
-                    <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                      <motion.div
-                        animate={{
-                          y: [0, -5, 0]
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          delay: index * 0.2
-                        }}
-                      >
-                        <Box sx={{ 
-                          color: theme.palette[stat.color].main, 
-                          mb: 1,
-                          display: 'inline-block'
-                        }}>
-                          {stat.icon}
-                        </Box>
-                      </motion.div>
-                      <Typography variant="h4" sx={{ fontWeight: 'bold', color: theme.palette[stat.color].main, mb: 0.5 }}>
-                        {stat.value}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {stat.label}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
       </motion.div>
 
       {/* Enhanced Vertical Sidebar Navigation */}

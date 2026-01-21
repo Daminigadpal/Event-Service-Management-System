@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    services: {
+      type: [String],
+      default: [],
+    },
     phone: {
       type: String,
       default: "",

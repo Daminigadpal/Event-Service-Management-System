@@ -31,9 +31,11 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @route   POST /api/v1/auth/register
 //
 const register = asyncHandler(async (req, res) => {
-   const { name, email, password, role } = req.body;
+   const { name, email, password, role, services } = req.body;
 
-   console.log('🔥 Registration attempt received:', { name, email, role });
+   console.log('🔥 Registration attempt received:', { name, email, role, services });
+   console.log('🔥 Request body type:', typeof req.body);
+   console.log('🔥 Services type:', typeof services, 'Services value:', services);
 
    // Validate input
    if (!name || !email || !password) {
@@ -66,6 +68,7 @@ const register = asyncHandler(async (req, res) => {
        role: role || 'user',
        department: role === 'event_manager' ? 'Event Management' : 'General',
        skills: role === 'event_manager' ? ['Event Management', 'Planning'] : [],
+       services: services || [],
        phone: '',
        address: ''
      });
@@ -74,7 +77,8 @@ const register = asyncHandler(async (req, res) => {
        id: newUser._id,
        name: newUser.name,
        email: newUser.email,
-       role: newUser.role
+       role: newUser.role,
+       services: newUser.services
      });
 
      res.status(201).json({
@@ -86,7 +90,8 @@ const register = asyncHandler(async (req, res) => {
          email: newUser.email,
          role: newUser.role,
          department: newUser.department,
-         skills: newUser.skills
+         skills: newUser.skills,
+         services: newUser.services
        }
      });
    } catch (error) {
@@ -167,7 +172,8 @@ const login = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         department: user.department,
-        skills: user.skills
+        skills: user.skills,
+        services: user.services
       },
     });
   } catch (error) {

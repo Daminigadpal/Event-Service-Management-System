@@ -69,6 +69,34 @@ const BookingManagement = () => {
 
   useEffect(() => {
     fetchBookings();
+    
+    // Listen for booking refresh events
+    const handleBookingRefresh = () => {
+      console.log('🔄 Booking refresh triggered');
+      fetchBookings();
+    };
+    
+    // Listen for custom event
+    window.addEventListener('bookingRefresh', handleBookingRefresh);
+    
+    // Also check localStorage trigger
+    const checkLocalStorageTrigger = () => {
+      const trigger = localStorage.getItem('bookingRefreshTrigger');
+      if (trigger) {
+        console.log('🔄 LocalStorage booking refresh triggered');
+        fetchBookings();
+        localStorage.removeItem('bookingRefreshTrigger');
+      }
+    };
+    
+    // Check localStorage every 2 seconds
+    const interval = setInterval(checkLocalStorageTrigger, 2000);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('bookingRefresh', handleBookingRefresh);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleOpenDialog = () => {

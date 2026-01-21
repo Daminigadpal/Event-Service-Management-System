@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Box, Button, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, IconButton, Dialog, DialogTitle, DialogContent,
@@ -14,6 +15,7 @@ import {
 import { toast } from 'react-toastify';
 
 const DiscountCodeManagement = () => {
+  const { user } = useAuth();
   const [discountCodes, setDiscountCodes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -31,11 +33,16 @@ const DiscountCodeManagement = () => {
     applicableTo: 'all' // 'all', 'services', 'packages'
   });
 
+  // Check if current user is admin for button visibility
+  const isAdmin = user && user.role === 'admin';
+  const isPhotographer = user && user.services && user.services.includes('photographers');
+  console.log('DiscountCodeManagement - User role:', user?.role, 'IsAdmin:', isAdmin, 'IsPhotographer:', isPhotographer, 'UserServices:', user?.services);
+
   // Mock discount codes
   const mockDiscountCodes = [
     {
       id: 1,
-      code: 'WELCOME10',
+      code: 'PHOTO10',
       type: 'percentage',
       value: 10,
       minAmount: 5000,
@@ -45,11 +52,12 @@ const DiscountCodeManagement = () => {
       startDate: '2024-01-01',
       endDate: '2024-12-31',
       isActive: true,
-      applicableTo: 'all'
+      applicableTo: 'all',
+      targetService: 'photographers'
     },
     {
       id: 2,
-      code: 'SUMMER20',
+      code: 'PHOTO20',
       type: 'percentage',
       value: 20,
       minAmount: 10000,
@@ -59,11 +67,12 @@ const DiscountCodeManagement = () => {
       startDate: '2024-06-01',
       endDate: '2024-08-31',
       isActive: true,
-      applicableTo: 'packages'
+      applicableTo: 'packages',
+      targetService: 'photographers'
     },
     {
       id: 3,
-      code: 'FLAT500',
+      code: 'EVENT500',
       type: 'fixed',
       value: 500,
       minAmount: 3000,
@@ -72,15 +81,41 @@ const DiscountCodeManagement = () => {
       usedCount: 45,
       startDate: '2024-01-01',
       endDate: '2024-06-30',
-      isActive: false,
-      applicableTo: 'services'
+      isActive: true,
+      applicableTo: 'services',
+      targetService: 'photographers'
+    },
+    {
+      id: 4,
+      code: 'VIDEO15',
+      type: 'percentage',
+      value: 15,
+      minAmount: 8000,
+      maxDiscount: 3000,
+      usageLimit: 75,
+      usedCount: 18,
+      startDate: '2024-01-01',
+      endDate: '2024-12-31',
+      isActive: true,
+      applicableTo: 'all',
+      targetService: 'videographers'
     }
   ];
 
   useEffect(() => {
-    setDiscountCodes(mockDiscountCodes);
-    setLoading(false);
-  }, []);
+    // Filter discount codes based on user's service type
+    const filteredDiscountCodes = isPhotographer
+      ? mockDiscountCodes.filter(code => code.targetService === 'photographers')
+      : isAdmin
+      ? mockDiscountCodes
+      : [];
+    
+    setDiscountCodes(filteredDiscountCodes);
+    console.log('Filtered discount codes for user:', {
+      isPhotographer,
+      discountCodesCount: filteredDiscountCodes.length
+    });
+  }, [user, isPhotographer, isAdmin]);
 
   const handleOpenDialog = (code = null) => {
     if (code) {
@@ -210,17 +245,19 @@ const DiscountCodeManagement = () => {
         Discount Code Management
       </Typography>
 
-      {/* Create Button */}
-      <Box sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-          size="large"
-        >
-          Create Discount Code
-        </Button>
-      </Box>
+      {/* Create Button - Admin Only */}
+      {user && user.role === 'admin' && (
+        <Box sx={{ mb: 3 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+            size="large"
+          >
+            Create Discount Code
+          </Button>
+        </Box>
+      )}
 
       {/* Discount Codes Table */}
       <TableContainer component={Paper}>

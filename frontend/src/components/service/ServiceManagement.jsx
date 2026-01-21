@@ -1,11 +1,13 @@
 // frontend/src/components/service/ServiceManagement.jsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import DiscountCodeManagement from '../discount/DiscountCodeManagement';
-import DiscountService from '../../services/discountService';
+import { createBooking } from '../../services/bookingService';
 
 const ServiceManagement = () => {
+  const { user } = useAuth();
   const [services, setServices] = useState([]);
   const [packages, setPackages] = useState([]);
   const [discountCodes, setDiscountCodes] = useState([]);
@@ -14,6 +16,11 @@ const ServiceManagement = () => {
   const [editingService, setEditingService] = useState(null);
   const [editingPackage, setEditingPackage] = useState(null);
   const [activeTab, setActiveTab] = useState('services');
+
+  // Check if current user is admin for button visibility
+  const isAdmin = user && user.role === 'admin';
+  const isPhotographer = user && user.services && user.services.includes('photographers');
+  console.log('ServiceManagement - User role:', user?.role, 'IsAdmin:', isAdmin, 'IsPhotographer:', isPhotographer, 'UserServices:', user?.services);
 
   // Mock data
   const mockServices = [
@@ -26,10 +33,35 @@ const ServiceManagement = () => {
       isActive: true,
       duration: '4 hours',
       requirements: 'Professional camera, lighting equipment',
-      discountEligible: true
+      discountEligible: true,
+      targetService: 'photographers'
     },
     {
       id: 2,
+      name: 'Event Photography',
+      type: 'Photography',
+      description: 'Complete event photography coverage',
+      basePrice: 8000,
+      isActive: true,
+      duration: '6 hours',
+      requirements: 'Professional camera, multiple lenses',
+      discountEligible: true,
+      targetService: 'photographers'
+    },
+    {
+      id: 3,
+      name: 'Portrait Photography',
+      type: 'Photography',
+      description: 'Professional portrait photography sessions',
+      basePrice: 3000,
+      isActive: true,
+      duration: '2 hours',
+      requirements: 'Studio lighting, backdrops',
+      discountEligible: true,
+      targetService: 'photographers'
+    },
+    {
+      id: 4,
       name: 'Videography',
       type: 'Videography',
       description: 'Professional video recording and editing',
@@ -37,10 +69,11 @@ const ServiceManagement = () => {
       isActive: true,
       duration: '6 hours',
       requirements: 'Professional camera, video editing software',
-      discountEligible: true
+      discountEligible: true,
+      targetService: 'videographers'
     },
     {
-      id: 3,
+      id: 5,
       name: 'Decoration',
       type: 'Decoration',
       description: 'Event decoration and setup services',
@@ -48,47 +81,97 @@ const ServiceManagement = () => {
       isActive: false,
       duration: '3 hours',
       requirements: 'Decorative materials, setup time',
-      discountEligible: false
+      discountEligible: true,
+      targetService: 'decorators'
+    },
+    {
+      id: 6,
+      name: 'DJ Services',
+      type: 'Entertainment',
+      description: 'Professional DJ and music services',
+      basePrice: 4000,
+      isActive: true,
+      duration: '4 hours',
+      requirements: 'Sound system, music library',
+      discountEligible: true,
+      targetService: 'DJs'
+    },
+    {
+      id: 7,
+      name: 'Makeup Services',
+      type: 'Beauty',
+      description: 'Professional makeup and styling services',
+      basePrice: 2500,
+      isActive: true,
+      duration: '2 hours',
+      requirements: 'Makeup kit, styling tools',
+      discountEligible: true,
+      targetService: 'makeup artists'
     }
   ];
 
   const mockPackages = [
     {
       id: 1,
-      name: 'Basic Package',
-      description: 'Essential services for small events',
+      name: 'Photography Basic Package',
+      description: 'Essential photography services for small events',
       price: 10000,
       duration: '4 hours',
-      includedServices: ['Photography', 'Basic Decoration'],
+      includedServices: ['Photography', 'Basic Editing'],
       isActive: true,
-      discountEligible: true
+      discountEligible: true,
+      targetService: 'photographers'
     },
     {
       id: 2,
-      name: 'Premium Package',
-      description: 'Complete services for medium events',
+      name: 'Photography Premium Package',
+      description: 'Complete photography coverage for medium events',
       price: 25000,
       duration: '8 hours',
-      includedServices: ['Photography', 'Videography', 'Premium Decoration'],
+      includedServices: ['Photography', 'Advanced Editing', 'Basic Decoration'],
       isActive: true,
-      discountEligible: true
+      discountEligible: true,
+      targetService: 'photographers'
     },
     {
       id: 3,
-      name: 'Luxury Package',
-      description: 'Full services for large events',
+      name: 'Photography Luxury Package',
+      description: 'Full photography services for large events',
       price: 50000,
       duration: '12 hours',
-      includedServices: ['Photography', 'Videography', 'Decoration', 'Catering'],
-      isActive: false,
-      discountEligible: false
+      includedServices: ['Photography', 'Professional Editing', 'Premium Decoration', 'Assistant'],
+      isActive: true,
+      discountEligible: true,
+      targetService: 'photographers'
+    },
+    {
+      id: 4,
+      name: 'Videography Package',
+      description: 'Complete video recording and editing services',
+      price: 30000,
+      duration: '8 hours',
+      includedServices: ['Videography', 'Video Editing'],
+      isActive: true,
+      discountEligible: true,
+      targetService: 'videographers'
+    },
+    {
+      id: 5,
+      name: 'Decoration Package',
+      description: 'Event decoration and setup services',
+      price: 15000,
+      duration: '6 hours',
+      includedServices: ['Decoration', 'Setup'],
+      isActive: true,
+      discountEligible: true,
+      targetService: 'decorators'
     }
   ];
 
   const mockDiscountCodes = [
     {
       id: 1,
-      code: 'WELCOME10',
+      code: 'PHOTO10',
       type: 'percentage',
       value: 10,
       minAmount: 5000,
@@ -98,11 +181,12 @@ const ServiceManagement = () => {
       startDate: '2024-01-01',
       endDate: '2024-12-31',
       isActive: true,
-      applicableTo: 'all'
+      applicableTo: 'services',
+      targetService: 'photographers'
     },
     {
       id: 2,
-      code: 'SUMMER20',
+      code: 'PHOTO20',
       type: 'percentage',
       value: 20,
       minAmount: 10000,
@@ -112,11 +196,12 @@ const ServiceManagement = () => {
       startDate: '2024-06-01',
       endDate: '2024-08-31',
       isActive: true,
-      applicableTo: 'packages'
+      applicableTo: 'packages',
+      targetService: 'photographers'
     },
     {
       id: 3,
-      code: 'FLAT500',
+      code: 'EVENT500',
       type: 'fixed',
       value: 500,
       minAmount: 3000,
@@ -125,16 +210,61 @@ const ServiceManagement = () => {
       usedCount: 45,
       startDate: '2024-01-01',
       endDate: '2024-06-30',
-      isActive: false,
-      applicableTo: 'services'
+      isActive: true,
+      applicableTo: 'all',
+      targetService: 'photographers'
+    },
+    {
+      id: 4,
+      code: 'VIDEO15',
+      type: 'percentage',
+      value: 15,
+      minAmount: 8000,
+      maxDiscount: 3000,
+      usageLimit: 75,
+      usedCount: 18,
+      startDate: '2024-01-01',
+      endDate: '2024-12-31',
+      isActive: true,
+      applicableTo: 'services',
+      targetService: 'videographers'
     }
   ];
 
   useEffect(() => {
-    setServices(mockServices);
-    setPackages(mockPackages);
-    setDiscountCodes(mockDiscountCodes);
-  }, []);
+    // Filter services based on user's service type
+    const filteredServices = isPhotographer 
+      ? mockServices.filter(service => service.targetService === 'photographers')
+      : isAdmin 
+      ? mockServices 
+      : [];
+    
+    const filteredPackages = isPhotographer
+      ? mockPackages.filter(pkg => pkg.targetService === 'photographers')
+      : isAdmin
+      ? mockPackages
+      : [];
+    
+    const filteredDiscountCodes = isPhotographer
+      ? mockDiscountCodes.filter(code => code.targetService === 'photographers')
+      : isAdmin
+      ? mockDiscountCodes
+      : [];
+
+    console.log('Filtering data for user:', {
+      userServices: user?.services,
+      isPhotographer,
+      servicesCount: filteredServices.length,
+      packagesCount: filteredPackages.length,
+      discountCodesCount: filteredDiscountCodes.length,
+      filteredDiscountCodes: JSON.stringify(filteredDiscountCodes, null, 2),
+      allDiscountCodes: JSON.stringify(mockDiscountCodes, null, 2)
+    });
+
+    setServices(filteredServices);
+    setPackages(filteredPackages);
+    setDiscountCodes(filteredDiscountCodes);
+  }, [user?.services, isPhotographer, isAdmin]);
 
   const handleServiceSubmit = (e) => {
     e.preventDefault();
@@ -225,6 +355,62 @@ const ServiceManagement = () => {
     if (window.confirm('Are you sure you want to delete this package?')) {
       setPackages(packages.filter(p => p.id !== id));
       toast.success('Package deleted successfully!');
+    }
+  };
+
+  const handleAddBooking = async (item) => {
+    try {
+      // Create booking data for the database - matching backend requirements
+      // Use valid ObjectIds for both services and packages
+      const serviceIdMap = {
+        1: '696084c33d7a9dace9f7c48b',  // Photography service
+        2: '507f1f1bc8619e35a1c35c9f',  // Videography service  
+        3: '507f1f1bc8619e35a1c35c9f',  // Decoration service
+        4: '507f1f1bc8619e35a1c35c9f',  // DJ Services
+        5: '507f1f1bc8619e35a1c35c9f',  // Makeup Services
+        6: '507f1f1bc8619e35a1c35c9f',  // Catering service
+        7: '507f1f1bc8619e35a1c35c9f'   // Entertainment service
+        8: '507f1f1bc8619e35a1c35c9f'   // Transportation service
+      };
+      
+      const serviceId = serviceIdMap[item.id] || item.id;
+      
+      // Calculate future date (tomorrow) to satisfy backend validation
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const futureDate = tomorrow.toISOString().split('T')[0];
+      
+      const bookingData = {
+        service: serviceId, // Use valid ObjectId for the service
+        eventType: 'other', // Use 'other' since Photography is not in the allowed enum
+        eventDate: futureDate, // Use future date to satisfy backend validation
+        eventLocation: 'To be confirmed', // Event location (required by backend)
+        guestCount: 50, // Guest count (required by backend)
+        specialRequests: `Booking for ${item.name}`, // Special requests (optional)
+        specialRequirements: `Booking for ${item.name} - ${item.description}` // Special requirements (optional)
+      };
+      
+      console.log('Creating booking with data:', bookingData);
+      console.log('Service ID being sent:', serviceId);
+      console.log('User authentication status:', user);
+      
+      // Create booking in the database using the booking service
+      const response = await createBooking(bookingData);
+      
+      // Show success message - handle different response structures
+      const bookingId = response.data?._id || response.data?.data?._id || response.data?._id || 'unknown';
+      toast.success(`Booking successfully created for ${item.name}! Booking ID: ${bookingId}`);
+      
+      // Trigger booking refresh in User Dashboard
+      localStorage.setItem('bookingRefreshTrigger', Date.now().toString());
+      window.dispatchEvent(new Event('bookingRefresh'));
+      
+      console.log('Booking created successfully:', response.data);
+      
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      console.error('Error details:', error.response?.data);
+      toast.error(`Failed to create booking: ${error.response?.data?.message || error.message || 'Unknown error'}`);
     }
   };
 
@@ -679,19 +865,6 @@ const ServiceManagement = () => {
                         <span className="fw-bold">Packages</span>
                       </div>
                     </button>
-                    <button
-                      onClick={() => setActiveTab('discounts')}
-                      className={`btn btn-lg flex-fill transition-all duration-300 ${
-                        activeTab === 'discounts'
-                          ? 'btn-primary bg-gradient-to-r from-green-600 to-teal-600 shadow-lg transform scale-105'
-                          : 'btn-outline-primary hover:bg-primary hover:bg-opacity-10'
-                      }`}
-                    >
-                      <div className="d-flex align-items-center justify-content-center">
-                        <i className="bi bi-tag-fill me-2"></i>
-                        <span className="fw-bold">Discount Codes</span>
-                      </div>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -701,16 +874,18 @@ const ServiceManagement = () => {
           {/* Services Tab */}
           {activeTab === 'services' && (
             <div className="container-fluid">
-              {/* Create Service Button */}
-              <div className="text-center mb-5">
-                <button
-                  onClick={() => setShowServiceForm(true)}
-                  className="btn btn-primary btn-lg px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white fw-bold rounded-pill shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 animate__animated animate__pulse animate__infinite"
-                >
-                  <i className="bi bi-plus-circle-fill me-2"></i>
-                  Create New Service
-                </button>
-              </div>
+              {/* Create Service Button - Admin Only */}
+              {user && user.role === 'admin' && (
+                <div className="text-center mb-5">
+                  <button
+                    onClick={() => setShowServiceForm(true)}
+                    className="btn btn-primary btn-lg px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white fw-bold rounded-pill shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 animate__animated animate__pulse animate__infinite"
+                  >
+                    <i className="bi bi-plus-circle-fill me-2"></i>
+                    Create New Service
+                  </button>
+                </div>
+              )}
 
               {/* Services Grid */}
               <div className="row g-4">
@@ -719,9 +894,9 @@ const ServiceManagement = () => {
                     <div className="card h-100 bg-white border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:rotate-1 animate__animated animate__fadeInUp" 
                          style={{animationDelay: `${index * 100}ms`}}>
                       {/* Gradient Header */}
-                      <div className="card-header bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 border-0 p-3">
+                      <div className="card-header bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 border-0 p-3" style={{background: 'linear-gradient(to right, #06b6d4, #2563eb, #9333ea)'}}>
                         <div className="d-flex justify-content-between align-items-center">
-                          <h5 className="card-title text-white mb-0 fw-bold">
+                          <h5 className="card-title text-white mb-0 fw-bold" style={{color: 'white !important', fontSize: '1.1rem', fontWeight: 'bold'}}>
                             <i className="bi bi-star-fill text-warning me-2"></i>
                             {service.name}
                           </h5>
@@ -729,18 +904,18 @@ const ServiceManagement = () => {
                             service.isActive 
                               ? 'bg-success text-white' 
                               : 'bg-danger text-white'
-                          }`}>
+                          }`} style={{fontSize: '0.8rem'}}>
                             {service.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
                       </div>
                       
-                      <div className="card-body text-dark">
+                      <div className="card-body" style={{color: '#212529 !important'}}>
                         <div className="mb-3">
-                          <span className="badge bg-info text-white mb-2">
+                          <span className="badge bg-info text-white mb-2" style={{backgroundColor: '#17a2b8', color: 'white'}}>
                             <i className="bi bi-tag-fill me-1"></i>{service.type}
                           </span>
-                          <p className="text-dark small">{service.description}</p>
+                          <p className="text-dark small" style={{color: '#212529 !important', fontSize: '0.9rem'}}>{service.description}</p>
                         </div>
                         
                         <div className="row text-center mb-3">
@@ -764,15 +939,18 @@ const ServiceManagement = () => {
                             <i className="bi bi-tag-fill me-2"></i>Available Discounts
                           </h6>
                           <div className="d-flex flex-wrap gap-1">
-                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'service').slice(0, 2).map((discount, index) => (
-                              <span key={discount.id} className="badge bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-pill px-2 py-1">
-                                <i className="bi bi-percent me-1"></i>
-                                {DiscountService.formatDiscountText(discount)}
-                              </span>
-                            ))}
-                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'service').length > 2 && (
-                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1">
-                                +{DiscountService.getApplicableDiscountCodes(discountCodes, 'service').length - 2} more
+                            {discountCodes && discountCodes.length > 0 && discountCodes
+                              .filter(code => code.targetService === 'photographers')
+                              .slice(0, 2)
+                              .map((discount, index) => (
+                                <span key={discount.id} className="badge rounded-pill px-2 py-1" style={{background: '#10b981', color: '#000000 !important', fontWeight: 'bold', border: '1px solid #059669'}}>
+                                  <i className="bi bi-percent me-1" style={{color: '#000000 !important'}}></i>
+                                  <span style={{color: '#000000 !important'}}>{discount.code}</span> - <span style={{color: '#000000 !important'}}>{discount.type === 'percentage' ? `${discount.value}%` : `₹${discount.value}`}</span>
+                                </span>
+                              ))}
+                            {discountCodes && discountCodes.filter(code => code.targetService === 'photographers').length > 2 && (
+                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1" style={{color: 'black !important'}}>
+                                +{discountCodes.filter(code => code.targetService === 'photographers').length - 2} more
                               </span>
                             )}
                           </div>
@@ -786,30 +964,25 @@ const ServiceManagement = () => {
                           <div className="text-muted small">{service.requirements}</div>
                         </div>
                         
-                        {/* Action Buttons */}
-                        <div className="d-grid gap-2">
-                          <div className="btn-group" role="group">
-                            <button
-                              onClick={() => handleEditService(service)}
-                              className="btn btn-info flex-fill"
-                            >
-                              <i className="bi bi-pencil-fill"></i> Edit
+                        {/* Action Buttons - Removed for regular users */}
+                        {isAdmin && (
+                          <div className="d-grid gap-2">
+                            <button className="btn btn-primary btn-sm" onClick={() => handleEditService(service)}>
+                              <i className="bi bi-pencil me-1"></i>Edit
                             </button>
-                            <button
-                              onClick={() => toggleServiceStatus(service.id)}
-                              className={`btn flex-fill ${
-                                service.isActive ? 'btn-warning' : 'btn-success'
-                              }`}
-                            >
-                              <i className={`bi ${service.isActive ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
-                              {service.isActive ? 'Deactivate' : 'Activate'}
+                            <button className="btn btn-warning btn-sm" onClick={() => handleToggleServiceStatus(service)}>
+                              <i className="bi bi-power me-1"></i>{service.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDeleteService(service.id)}>
+                              <i className="bi bi-trash me-1"></i>Delete
                             </button>
                           </div>
-                          <button
-                            onClick={() => handleDeleteService(service.id)}
-                            className="btn btn-danger w-100"
-                          >
-                            <i className="bi bi-trash-fill"></i> Delete
+                        )}
+                        
+                        {/* Add Booking Button - For all users */}
+                        <div className="d-grid gap-2 mt-3">
+                          <button className="btn btn-success btn-sm" onClick={() => handleAddBooking(service)}>
+                            <i className="bi bi-calendar-plus me-1"></i>Add Booking
                           </button>
                         </div>
                       </div>
@@ -823,19 +996,22 @@ const ServiceManagement = () => {
           {/* Packages Tab */}
           {activeTab === 'packages' && (
             <div className="container-fluid">
-              {/* Create Package Button */}
-              <div className="text-center mb-5">
-                <button
-                  onClick={() => setShowPackageForm(true)}
-                  className="btn btn-primary btn-lg px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white fw-bold rounded-pill shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 animate__animated animate__pulse animate__infinite"
-                >
-                  <i className="bi bi-gift-fill me-2"></i>
-                  Create New Package
-                </button>
-              </div>
+              {/* Create Package Button - Admin Only */}
+              {user && user.role === 'admin' && (
+                <div className="text-center mb-5">
+                  <button
+                    onClick={() => setShowPackageForm(true)}
+                    className="btn btn-primary btn-lg px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white fw-bold rounded-pill shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-300 animate__animated animate__pulse animate__infinite"
+                  >
+                    <i className="bi bi-gift-fill me-2"></i>
+                    Create New Package
+                  </button>
+                </div>
+              )}
 
               {/* Packages Grid */}
               <div className="row g-4">
+                {console.log('Rendering packages:', packages.length, packages)}
                 {packages.map((pkg, index) => (
                   <div key={pkg.id} className="col-lg-4 col-md-6 mb-4">
                     <div className="card h-100 bg-white border-0 shadow-2xl transform transition-all duration-500 hover:scale-105 hover:-translate-y-2 animate__animated animate__fadeInUp" 
@@ -853,24 +1029,25 @@ const ServiceManagement = () => {
                       </div>
                       
                       {/* Package Header */}
-                      <div className="card-header bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-0 p-4 text-center">
+                      <div className="card-header bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 border-0 p-4 text-center" style={{background: 'linear-gradient(to right, #9333ea, #ec4899, #6366f1)'}}>
                         <div className="mb-3">
-                          <i className="bi bi-box-seam-fill display-4 text-white"></i>
+                          <i className="bi bi-box-seam-fill display-4" style={{color: 'white'}}></i>
                         </div>
-                        <h4 className="card-title text-white mb-2 fw-bold">{pkg.name}</h4>
+                        <h4 className="card-title mb-2 fw-bold" style={{color: 'white !important', fontSize: '1.2rem', fontWeight: 'bold'}}>{pkg.name}</h4>
                         <div className="bg-light rounded-pill px-3 py-1 d-inline-block">
-                          <small className="text-dark fw-bold">
+                          <small className="text-dark fw-bold" style={{color: '#212529 !important'}}>
                             <i className="bi bi-clock-fill me-1"></i>{pkg.duration}
                           </small>
                         </div>
                       </div>
                       
-                      <div className="card-body text-dark">
+                      <div className="card-body" style={{color: '#212529 !important'}}>
                         <div className="text-center mb-4">
-                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg p-3 mb-3">
-                            <span className="display-6 fw-bold text-dark">₹{pkg.price.toLocaleString()}</span>
-                            <div className="small text-dark fw-bold">Total Package Price</div>
+                          <div className="display-6 fw-bold text-primary mb-2" style={{color: '#2563eb !important', fontSize: '2rem', fontWeight: 'bold'}}>
+                            <i className="bi bi-currency-rupee"></i>
+                            {pkg.price.toLocaleString()}
                           </div>
+                          <p className="lead" style={{color: '#6c757d !important', fontSize: '1rem'}}>{pkg.description}</p>
                         </div>
                         
                         {/* Applicable Discounts */}
@@ -879,15 +1056,18 @@ const ServiceManagement = () => {
                             <i className="bi bi-tag-fill me-2"></i>Available Discounts
                           </h6>
                           <div className="d-flex flex-wrap gap-1">
-                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'package').slice(0, 2).map((discount, index) => (
-                              <span key={discount.id} className="badge bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-pill px-2 py-1">
-                                <i className="bi bi-percent me-1"></i>
-                                {DiscountService.formatDiscountText(discount)}
-                              </span>
-                            ))}
-                            {DiscountService.getApplicableDiscountCodes(discountCodes, 'package').length > 2 && (
-                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1">
-                                +{DiscountService.getApplicableDiscountCodes(discountCodes, 'package').length - 2} more
+                            {discountCodes && discountCodes.length > 0 && discountCodes
+                              .filter(code => code.targetService === 'photographers')
+                              .slice(0, 2)
+                              .map((discount, index) => (
+                                <span key={discount.id} className="badge rounded-pill px-2 py-1" style={{background: '#10b981', color: '#000000 !important', fontWeight: 'bold', border: '1px solid #059669'}}>
+                                  <i className="bi bi-percent me-1" style={{color: '#000000 !important'}}></i>
+                                  <span style={{color: '#000000 !important'}}>{discount.code}</span> - <span style={{color: '#000000 !important'}}>{discount.type === 'percentage' ? `${discount.value}%` : `₹${discount.value}`}</span>
+                                </span>
+                              ))}
+                            {discountCodes && discountCodes.filter(code => code.targetService === 'photographers').length > 2 && (
+                              <span className="badge bg-secondary text-white rounded-pill px-2 py-1" style={{color: 'black !important'}}>
+                                +{discountCodes.filter(code => code.targetService === 'photographers').length - 2} more
                               </span>
                             )}
                           </div>
@@ -914,30 +1094,39 @@ const ServiceManagement = () => {
                           </div>
                         </div>
                         
-                        {/* Action Buttons */}
-                        <div className="d-grid gap-2">
-                          <div className="btn-group" role="group">
+                        {/* Action Buttons - Removed for regular users */}
+                        {isAdmin && (
+                          <div className="d-grid gap-2">
+                            <div className="btn-group" role="group">
+                              <button
+                                onClick={() => handleEditPackage(pkg)}
+                                className="btn btn-info flex-fill"
+                              >
+                                <i className="bi bi-pencil-fill"></i> Edit
+                              </button>
+                              <button
+                                onClick={() => togglePackageStatus(pkg.id)}
+                                className={`btn flex-fill ${
+                                  pkg.isActive ? 'btn-warning' : 'btn-success'
+                                }`}
+                              >
+                                <i className={`bi ${pkg.isActive ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
+                                {pkg.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            </div>
                             <button
-                              onClick={() => handleEditPackage(pkg)}
-                              className="btn btn-info flex-fill"
+                              onClick={() => handleDeletePackage(pkg.id)}
+                              className="btn btn-danger w-100"
                             >
-                              <i className="bi bi-pencil-fill"></i> Edit
-                            </button>
-                            <button
-                              onClick={() => togglePackageStatus(pkg.id)}
-                              className={`btn flex-fill ${
-                                pkg.isActive ? 'btn-warning' : 'btn-success'
-                              }`}
-                            >
-                              <i className={`bi ${pkg.isActive ? 'bi-pause-fill' : 'bi-play-fill'}`}></i>
-                              {pkg.isActive ? 'Deactivate' : 'Activate'}
+                              <i className="bi bi-trash-fill"></i> Delete
                             </button>
                           </div>
-                          <button
-                            onClick={() => handleDeletePackage(pkg.id)}
-                            className="btn btn-danger w-100"
-                          >
-                            <i className="bi bi-trash-fill"></i> Delete
+                        )}
+                        
+                        {/* Add Booking Button - For all users */}
+                        <div className="d-grid gap-2 mt-3">
+                          <button className="btn btn-success btn-sm" onClick={() => handleAddBooking(pkg)}>
+                            <i className="bi bi-calendar-plus me-1"></i>Add Booking
                           </button>
                         </div>
                       </div>
@@ -945,13 +1134,6 @@ const ServiceManagement = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Discount Codes Tab */}
-          {activeTab === 'discounts' && (
-            <div className="container-fluid">
-              <DiscountCodeManagement />
             </div>
           )}
         </div>
