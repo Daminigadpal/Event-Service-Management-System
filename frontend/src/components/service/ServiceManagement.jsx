@@ -369,7 +369,7 @@ const ServiceManagement = () => {
         4: '507f1f1bc8619e35a1c35c9f',  // DJ Services
         5: '507f1f1bc8619e35a1c35c9f',  // Makeup Services
         6: '507f1f1bc8619e35a1c35c9f',  // Catering service
-        7: '507f1f1bc8619e35a1c35c9f'   // Entertainment service
+        7: '507f1f1bc8619e35a1c35c9f',  // Entertainment service
         8: '507f1f1bc8619e35a1c35c9f'   // Transportation service
       };
       
@@ -385,7 +385,7 @@ const ServiceManagement = () => {
         eventType: 'other', // Use 'other' since Photography is not in the allowed enum
         eventDate: futureDate, // Use future date to satisfy backend validation
         eventLocation: 'To be confirmed', // Event location (required by backend)
-        guestCount: 50, // Guest count (required by backend)
+        guestCount: 50, // Guest count (required by backend) - fixed to reasonable number
         specialRequests: `Booking for ${item.name}`, // Special requests (optional)
         specialRequirements: `Booking for ${item.name} - ${item.description}` // Special requirements (optional)
       };

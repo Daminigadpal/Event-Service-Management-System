@@ -48,69 +48,15 @@ const EventPreferencesWorking = () => {
       console.log('User from localStorage:', user);
       console.log('Is admin:', isAdmin);
       
-      // Try to fetch real data
+      // Fetch real data from backend
       const response = isAdmin ? await getAllEventPreferences() : await getEventPreferences();
       
-      // Mock data for demonstration
-      const mockPreferences = [
-        {
-          _id: '1',
-          user: { name: 'John Doe', email: 'john@example.com' },
-          eventType: 'Wedding Ceremony',
-          preferredVenue: 'Grand Ballroom',
-          budgetRange: '$10,000 - $15,000',
-          guestCount: '150-200',
-          notes: 'Elegant evening ceremony with dinner',
-          createdAt: '2024-01-15'
-        },
-        {
-          _id: '2',
-          user: { name: 'Jane Smith', email: 'jane@example.com' },
-          eventType: 'Birthday Party',
-          preferredVenue: 'Community Center',
-          budgetRange: '$2,000 - $3,000',
-          guestCount: '50-75',
-          notes: 'Kids birthday celebration with entertainment',
-          createdAt: '2024-01-10'
-        },
-        {
-          _id: '3',
-          user: { name: 'Mike Johnson', email: 'mike@example.com' },
-          eventType: 'Corporate Event',
-          preferredVenue: 'Conference Hall A',
-          budgetRange: '$5,000 - $8,000',
-          guestCount: '100-150',
-          notes: 'Annual company meeting with presentations',
-          createdAt: '2024-01-20'
-        }
-      ];
-      
-      // Use real data if available, otherwise use mock data
-      const preferencesData = Array.isArray(response?.data) && response.data.length > 0 
-        ? response.data 
-        : mockPreferences;
-      
-      console.log('Setting preferences:', preferencesData);
-      setPreferences(preferencesData);
+      console.log('Setting preferences:', response.data);
+      setPreferences(response.data || []);
     } catch (err) {
       console.error('Error loading preferences:', err);
       setError(err.message || 'Failed to load event preferences');
-      
-      // Use mock data on error
-      const mockPreferences = [
-        {
-          _id: '4',
-          user: { name: 'Sarah Wilson', email: 'sarah@example.com' },
-          eventType: 'Anniversary Party',
-          preferredVenue: 'Garden Restaurant',
-          budgetRange: '$3,000 - $5,000',
-          guestCount: '30-50',
-          notes: 'Romantic dinner celebration',
-          createdAt: '2024-01-25'
-        }
-      ];
-      
-      setPreferences(mockPreferences);
+      setPreferences([]);
     } finally {
       setLoading(false);
     }
@@ -161,30 +107,33 @@ const EventPreferencesWorking = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // For now, just work with local state
+      // Prepare data for backend
+      const preferenceData = {
+        eventType: currentPreference.eventType,
+        preferredVenue: currentPreference.preferredVenue,
+        budgetRange: currentPreference.budgetRange,
+        guestCount: currentPreference.guestCount,
+        notes: currentPreference.notes
+      };
+
       if (isEditing) {
-        // Update existing preference
+        // Update existing preference via API
+        const response = await updateEventPreference(preferenceData);
         setPreferences(prev => prev.map(p => 
-          p._id === currentPreference._id ? { ...p, ...currentPreference } : p
+          p._id === currentPreference._id ? response.data : p
         ));
         toast.success('Event preference updated successfully');
       } else {
-        // Add new preference with unique ID
-        const newPreference = {
-          ...currentPreference,
-          _id: Date.now().toString(),
-          user: { name: 'Current User', email: 'user@example.com' },
-          createdAt: new Date().toISOString()
-        };
-        setPreferences(prev => [newPreference, ...prev]);
+        // Create new preference via API
+        const response = await createEventPreference(preferenceData);
+        setPreferences(prev => [response.data, ...prev]);
         toast.success('Event preference created successfully');
       }
       
-      await loadPreferences();
       handleCloseDialog();
     } catch (error) {
-      console.error('Error saving event preference:', error);
-      toast.error('Failed to save event preference');
+      console.error('Error saving preference:', error);
+      toast.error(error.response?.data?.message || 'Failed to save preference');
     }
   };
 
@@ -212,7 +161,12 @@ const EventPreferencesWorking = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">Event Preferences Management</Typography>
+        <Box>
+          <Typography variant="h5">Event Preferences Management</Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Logged in as: {JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}

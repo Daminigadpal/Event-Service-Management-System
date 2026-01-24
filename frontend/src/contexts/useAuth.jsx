@@ -72,5 +72,32 @@ export const useAuth = () => {
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
+
+  // Add updateUserProfile function
+  const updateUserProfile = async (profileData) => {
+    try {
+      const response = await fetch('http://localhost:5000/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // This is important for cookies
+        body: JSON.stringify(profileData),
+      });
+      
+      // Update local user state
+      const currentUser = context.user;
+      if (currentUser) {
+        const updatedUser = { ...currentUser, ...profileData };
+        context.setUser(updatedUser);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      throw error;
+    }
+  };
+
+  return { ...context, updateUserProfile };
 };

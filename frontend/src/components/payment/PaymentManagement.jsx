@@ -74,7 +74,6 @@ const PaymentManagement = () => {
   const [eventPreferences, setEventPreferences] = useState({});
   const [formData, setFormData] = useState({
     booking: '',
-    user: user?.id || '', // Add user field from auth context
     paymentType: 'advance',
     amount: '',
     paymentMethod: 'cash',
@@ -258,7 +257,6 @@ const PaymentManagement = () => {
     setSelectedPayment(null);
     setFormData({
       booking: '',
-      user: user?.id || '', // Include user field
       paymentType: 'advance',
       amount: '',
       paymentMethod: 'cash',
@@ -275,8 +273,18 @@ const PaymentManagement = () => {
         await updatePaymentStatus(selectedPayment._id, { status: formData.status || 'paid' });
         toast.success('Payment updated successfully');
       } else {
-        // Create new payment
-        await createPayment(formData);
+        // Create new payment - remove user field as it comes from auth
+        const paymentData = {
+          booking: formData.booking,
+          paymentType: formData.paymentType,
+          amount: formData.amount,
+          paymentMethod: formData.paymentMethod,
+          transactionId: formData.transactionId,
+          notes: formData.notes
+        };
+        
+        console.log('Creating payment with data:', paymentData);
+        await createPayment(paymentData);
         toast.success('Payment recorded successfully');
       }
       fetchPayments();
@@ -471,7 +479,17 @@ const renderPaymentsTable = () => (
                 {payment.booking?.eventType}
               </Typography>
               <Typography variant="caption" display="block">
-                {new Date(payment.booking?.eventDate).toLocaleDateString()}
+                {(() => {
+                  // Find the corresponding booking to get the event date
+                  const booking = bookings.find(b => b._id === payment.booking?._id || payment.booking);
+                  if (booking && booking.eventDate) {
+                    return new Date(booking.eventDate).toLocaleDateString();
+                  } else if (payment.booking?.eventDate) {
+                    return new Date(payment.booking.eventDate).toLocaleDateString();
+                  } else {
+                    return 'Date not available';
+                  }
+                })()}
               </Typography>
             </TableCell>
             <TableCell>
@@ -954,15 +972,55 @@ const renderPaymentsTable = () => (
         <form onSubmit={handleSubmit}>
           <DialogContent>
             <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Booking ID"
-                value={formData.booking}
-                onChange={(e) => setFormData({ ...formData, booking: e.target.value })}
-                required
-                helperText="Enter the booking ID from your booking confirmation"
-                error={formData.booking && formData.booking.length !== 24 && !formData.booking.match(/^[0-9a-fA-F]{24}$/) ? "Invalid booking ID format" : ""}
-              />
+              <FormControl fullWidth required>
+                <InputLabel>Select Booking</InputLabel>
+                <Select
+                  value={formData.booking}
+                  onChange={(e) => setFormData({ ...formData, booking: e.target.value })}
+                  label="Select Booking"
+                >
+                  <MenuItem value="">Choose a booking...</MenuItem>
+                  {bookings.map((booking) => (
+                    <MenuItem key={booking._id} value={booking._id}>
+                      {booking.specialRequests?.replace('Booking for ', '') || booking.eventType} - {new Date(booking.eventDate).toLocaleDateString()} - {booking._id?.slice(-8)}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography variant="caption" color="text.secondary">
+                  Select a booking from your existing bookings
+                </Typography>
+              </FormControl>
+
+              {/* Show selected booking details */}
+              {formData.booking && (
+                <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                    Selected Booking Details:
+                  </Typography>
+                  {(() => {
+                    const selectedBooking = bookings.find(b => b._id === formData.booking);
+                    return selectedBooking ? (
+                      <Box>
+                        <Typography variant="body2">
+                          <strong>Event:</strong> {selectedBooking.specialRequests?.replace('Booking for ', '') || selectedBooking.eventType}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Date:</strong> {new Date(selectedBooking.eventDate).toLocaleDateString()} ({new Date(selectedBooking.eventDate).toLocaleDateString('en-US', { weekday: 'long' })})
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Location:</strong> {selectedBooking.eventLocation}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Guests:</strong> {selectedBooking.guestCount}
+                        </Typography>
+                        <Typography variant="body2">
+                          <strong>Booking ID:</strong> <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{selectedBooking._id}</span>
+                        </Typography>
+                      </Box>
+                    ) : null;
+                  })()}
+                </Box>
+              )}
               
               <FormControl fullWidth>
                 <InputLabel>Payment Type</InputLabel>

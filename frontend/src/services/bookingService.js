@@ -1,5 +1,5 @@
 // frontend/src/services/bookingService.js
-import api from '../api';
+import api from './api.js';
 
 // Get all bookings
 export const getBookings = async () => {

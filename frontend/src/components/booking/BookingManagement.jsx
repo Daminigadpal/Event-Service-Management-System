@@ -125,54 +125,55 @@ const BookingManagement = () => {
     });
   };
 
-const handleCreateBooking = async () => {
-  try {
-    if (!newBooking.eventDate || !newBooking.eventLocation || !newBooking.guestCount) {
-      toast.error('Please fill in all required fields');
-      return;
+  const handleCreateBooking = async () => {
+    try {
+      if (!newBooking.eventDate || !newBooking.eventLocation || !newBooking.guestCount) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+
+      // Check for booking conflicts first
+      const conflictData = {
+        date: newBooking.eventDate,
+        startTime: '09:00', // Default start time (you might want to add this to form)
+        endTime: '17:00'   // Default end time (you might want to add this to form)
+      };
+
+      const conflictCheck = await checkBookingConflicts(conflictData);
+      
+      if (conflictCheck.hasConflicts) {
+        toast.error(`Booking conflicts found: ${conflictCheck.conflicts.length} existing booking(s) at the same time`);
+        return;
+      }
+
+      // Use the service ID we just created
+      const bookingData = {
+        service: '696084c33d7a9dace9f7c48b', // Wedding Planning service ID
+        eventType: newBooking.eventType,
+        eventDate: newBooking.eventDate,
+        eventLocation: newBooking.eventLocation,
+        guestCount: parseInt(newBooking.guestCount),
+        specialRequests: newBooking.specialRequests,
+        status: newBooking.status
+      };
+
+      console.log('Creating booking with data:', bookingData);
+      const response = await createBooking(bookingData);
+      setBookings([...bookings, response.data]);
+      toast.success('Booking created successfully');
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      
+      // Handle conflict errors specifically
+      if (error.response?.status === 409) {
+        toast.error(error.response?.data?.error || 'Booking time conflict detected');
+      } else {
+        toast.error(error.response?.data?.message || error.message || 'Failed to create booking');
+      }
     }
+  };
 
-    // Check for booking conflicts first
-    const conflictData = {
-      date: newBooking.eventDate,
-      startTime: '09:00', // Default start time (you might want to add this to form)
-      endTime: '17:00'   // Default end time (you might want to add this to form)
-    };
-
-    const conflictCheck = await checkBookingConflicts(conflictData);
-    
-    if (conflictCheck.hasConflicts) {
-      toast.error(`Booking conflicts found: ${conflictCheck.conflicts.length} existing booking(s) at the same time`);
-      return;
-    }
-
-    // Use the service ID we just created
-    const bookingData = {
-      service: '696084c33d7a9dace9f7c48b', // Wedding Planning service ID
-      eventType: newBooking.eventType,
-      eventDate: newBooking.eventDate,
-      eventLocation: newBooking.eventLocation,
-      guestCount: parseInt(newBooking.guestCount),
-      specialRequests: newBooking.specialRequests,
-      status: newBooking.status
-    };
-
-    console.log('Creating booking with data:', bookingData);
-    const response = await createBooking(bookingData);
-    setBookings([...bookings, response.data]);
-    toast.success('Booking created successfully');
-    handleCloseDialog();
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    
-    // Handle conflict errors specifically
-    if (error.response?.status === 409) {
-      toast.error(error.response?.data?.error || 'Booking time conflict detected');
-    } else {
-      toast.error(error.response?.data?.message || error.message || 'Failed to create booking');
-    }
-  }
-};
   const handleStatusChange = async (bookingId, newStatus) => {
     try {
       const response = await updateBookingStatus(bookingId, newStatus);
@@ -237,16 +238,30 @@ const handleCreateBooking = async () => {
   return (
     <Box p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5">
-          {user?.role === 'admin' ? 'All Bookings' : 'My Bookings'}
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-        >
-          New Booking
-        </Button>
+        <Box>
+          <Typography variant="h5">
+            {user?.role === 'admin' ? 'All Bookings' : 'My Bookings'}
+          </Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            Total: {bookings.length} bookings
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={fetchBookings}
+            size="small"
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenDialog}
+          >
+            New Booking
+          </Button>
+        </Box>
       </Box>
 
       {error && bookings.length === 0 && (
@@ -262,7 +277,8 @@ const handleCreateBooking = async () => {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell><strong>Event Type</strong></TableCell>
+                <TableCell><strong>Booking ID</strong></TableCell>
+                <TableCell><strong>Service / Event</strong></TableCell>
                 <TableCell><strong>Date</strong></TableCell>
                 <TableCell><strong>Location</strong></TableCell>
                 <TableCell><strong>Guests</strong></TableCell>
@@ -274,8 +290,21 @@ const handleCreateBooking = async () => {
             <TableBody>
               {bookings.map((booking) => (
                 <TableRow key={booking._id}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                      {booking._id?.slice(-8) || 'N/A'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      ID: {booking._id?.slice(0, 8)}...
+                    </Typography>
+                  </TableCell>
                   <TableCell sx={{ textTransform: 'capitalize' }}>
-                    {booking.eventType}
+                    {booking.service?.name || booking.eventType || 'N/A'}
+                    {booking.specialRequests && (
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        {booking.specialRequests.replace('Booking for ', '')}
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     {new Date(booking.eventDate).toLocaleDateString()}
@@ -288,11 +317,6 @@ const handleCreateBooking = async () => {
                       color={getStatusColor(booking.status)}
                       size="small"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {booking.paymentStatus ? booking.paymentStatus.toUpperCase() : 'N/A'}
-                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Chip 

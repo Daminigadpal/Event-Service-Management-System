@@ -11,11 +11,21 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @route   GET /api/v1/bookings
 // @access  Private
 const getBookings = asyncHandler(async (req, res, next) => {
-  // Return user's bookings
-  const bookings = await Booking.find({ customer: req.user.id })
-    .populate('service', 'name description price duration')
-    .populate('staffAssigned', 'name email phone')
-    .sort({ eventDate: 1 });
+  let bookings;
+  
+  if (req.user.role === 'staff') {
+    // Staff can see bookings assigned to them
+    bookings = await Booking.find({ staffAssigned: req.user.id })
+      .populate('customer', 'name email phone')
+      .populate('service', 'name description price duration')
+      .sort({ eventDate: 1 });
+  } else {
+    // Customers see their own bookings
+    bookings = await Booking.find({ customer: req.user.id })
+      .populate('service', 'name description price duration')
+      .populate('staffAssigned', 'name email phone')
+      .sort({ eventDate: 1 });
+  }
 
   res.status(200).json({
     success: true,

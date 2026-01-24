@@ -11,8 +11,13 @@ const asyncHandler = (fn) => (req, res, next) =>
 // @route   GET /api/event-preferences
 // @access  Private
 const getEventPreferences = asyncHandler(async (req, res, next) => {
-  // Return all event preferences from database for admin, or user-specific for regular users
-  const preferences = await EventPreference.find({}).populate('user', 'name email');
+  // Get user-specific preferences for regular users, all preferences for admin
+  let preferences;
+  if (req.user.role === 'admin') {
+    preferences = await EventPreference.find({}).populate('user', 'name email');
+  } else {
+    preferences = await EventPreference.find({ user: req.user.id }).populate('user', 'name email');
+  }
 
   res.status(200).json({
     success: true,
@@ -120,6 +125,10 @@ const updateEventPreferences = asyncHandler(async (req, res, next) => {
     normalizedGuestCount = parseInt(guestCount.split('-')[1]) || parseInt(guestCount.split('-')[0]);
   } else if (typeof guestCount === 'string') {
     normalizedGuestCount = parseInt(guestCount);
+  } else if (typeof guestCount === 'number') {
+    normalizedGuestCount = guestCount;
+  } else {
+    normalizedGuestCount = 50;
   }
   console.log('DEBUG: normalizedGuestCount in update:', normalizedGuestCount);
 

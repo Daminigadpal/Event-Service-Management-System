@@ -28,9 +28,13 @@ const bookingSchema = new mongoose.Schema(
       required: [true, 'Event date is required'],
       validate: {
         validator: function(value) {
+          // Allow past dates if booking is completed, otherwise require future date
+          if (this.status === 'completed') {
+            return true;
+          }
           return value > new Date();
         },
-        message: 'Event date must be in the future'
+        message: 'Event date must be in the future for non-completed bookings'
       }
     },
     eventLocation: {

@@ -8,7 +8,8 @@ export default function BookEvent() {
     eventDate: "",
     location: "",
     notes: "",
-    status: "Inquiry" // default booking status
+    eventType: "other", // Add eventType field with default value
+    status: "Inquiry" // Keep status field for backend compatibility
   });
 
   const [services, setServices] = useState([]);
@@ -45,7 +46,7 @@ export default function BookEvent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.service || !formData.eventDate || !formData.location) {
+    if (!formData.service || !formData.eventDate || !formData.location || !formData.eventType) {
       setError("Please fill in all required fields");
       return;
     }
@@ -173,6 +174,27 @@ export default function BookEvent() {
           </select>
           {/* Debug: Show current status */}
           <p className="text-xs text-gray-500 mt-1">Current status: {formData.status}</p>
+        </div>
+        
+        {/* Event Type */}
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">
+            Event Type <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="eventType"
+            value={formData.eventType}
+            onChange={handleChange}
+            required
+            className="shadow border rounded w-full py-2 px-3"
+          >
+            <option value="">Select Event Type</option>
+            <option value="wedding">Wedding</option>
+            <option value="corporate">Corporate</option>
+            <option value="birthday">Birthday</option>
+            <option value="conference">Conference</option>
+            <option value="other">Other</option>
+          </select>
         </div>
 
         {/* Event Date */}

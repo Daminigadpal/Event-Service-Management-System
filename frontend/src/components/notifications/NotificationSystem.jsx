@@ -17,8 +17,8 @@ import {
 import { toast } from 'react-toastify';
 import { notificationService } from '../../services/notificationService';
 
-const NotificationSystem = ({ userRole = 'admin' }) => {
-  console.log('🔔 NotificationSystem component rendering...', { userRole });
+const NotificationSystem = ({ userRole = 'admin', currentUser = null }) => {
+  console.log('🔔 NotificationSystem component rendering...', { userRole, currentUser });
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -35,12 +35,12 @@ const NotificationSystem = ({ userRole = 'admin' }) => {
     recipients: [] // For bulk notifications
   });
 
-  // Mock notification history
+  // Mock notification history - filtered by current user
   const [notificationHistory, setNotificationHistory] = useState([
     {
       id: 1,
       type: 'email',
-      recipient: 'customer@example.com',
+      recipient: currentUser?.email || 'customer@example.com',
       subject: 'Booking Confirmation',
       message: 'Your wedding booking has been confirmed',
       status: 'sent',
@@ -50,7 +50,7 @@ const NotificationSystem = ({ userRole = 'admin' }) => {
     {
       id: 2,
       type: 'sms',
-      recipient: '+1234567890',
+      recipient: currentUser?.phone || '+1234567890',
       subject: 'Payment Reminder',
       message: 'Payment due for your event booking',
       status: 'sent',
@@ -60,14 +60,28 @@ const NotificationSystem = ({ userRole = 'admin' }) => {
     {
       id: 3,
       type: 'email',
-      recipient: 'staff@example.com',
-      subject: 'New Assignment',
-      message: 'You have been assigned to a new event',
-      status: 'pending',
-      timestamp: '2024-01-15T08:45:00Z',
+      recipient: currentUser?.email || 'customer@example.com',
+      subject: 'Event Update',
+      message: 'Your event details have been updated',
+      status: 'sent',
+      timestamp: '2024-01-14T15:45:00Z',
       sender: 'Admin'
+    },
+    {
+      id: 4,
+      type: 'email',
+      recipient: currentUser?.email || 'customer@example.com',
+      subject: 'Event Reminder',
+      message: 'Reminder: Your event is scheduled for tomorrow',
+      status: 'sent',
+      timestamp: '2024-01-13T08:00:00Z',
+      sender: 'System'
     }
-  ]);
+  ].filter(notification => {
+    // Filter notifications to show only those for the current user
+    if (!currentUser) return false;
+    return notification.recipient === currentUser.email || notification.recipient === currentUser.phone;
+  }));
 
   const templates = notificationService.getTemplates();
 
@@ -262,50 +276,62 @@ const NotificationSystem = ({ userRole = 'admin' }) => {
       <CardContent>
         <Typography variant="h6" gutterBottom>
           <HistoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Notification History
+          {userRole === 'customer' ? 'Your Notification History' : 'Notification History'}
         </Typography>
         
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Type</TableCell>
-                <TableCell>Recipient</TableCell>
-                <TableCell>Subject</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Sender</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {notificationHistory.map((notification) => (
-                <TableRow key={notification.id}>
-                  <TableCell>
-                    <Chip
-                      icon={notification.type === 'email' ? <EmailIcon /> : <SmsIcon />}
-                      label={notification.type === 'email' ? 'Email' : 'SMS'}
-                      size="small"
-                      color={notification.type === 'email' ? 'primary' : 'secondary'}
-                    />
-                  </TableCell>
-                  <TableCell>{notification.recipient}</TableCell>
-                  <TableCell>{notification.subject}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={notification.status}
-                      size="small"
-                      color={notification.status === 'sent' ? 'success' : 'warning'}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {new Date(notification.timestamp).toLocaleString()}
-                  </TableCell>
-                  <TableCell>{notification.sender}</TableCell>
+        {notificationHistory.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              {userRole === 'customer' ? 'You have no notifications yet.' : 'No notifications found.'}
+            </Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Subject</TableCell>
+                  <TableCell>Message</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Timestamp</TableCell>
+                  {userRole !== 'customer' && <TableCell>Sender</TableCell>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {notificationHistory.map((notification) => (
+                  <TableRow key={notification.id}>
+                    <TableCell>
+                      <Chip
+                        icon={notification.type === 'email' ? <EmailIcon /> : <SmsIcon />}
+                        label={notification.type === 'email' ? 'Email' : 'SMS'}
+                        size="small"
+                        color={notification.type === 'email' ? 'primary' : 'secondary'}
+                      />
+                    </TableCell>
+                    <TableCell>{notification.subject}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {notification.message}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={notification.status}
+                        size="small"
+                        color={notification.status === 'sent' ? 'success' : 'warning'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {new Date(notification.timestamp).toLocaleString()}
+                    </TableCell>
+                    {userRole !== 'customer' && <TableCell>{notification.sender}</TableCell>}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </CardContent>
     </Card>
   );

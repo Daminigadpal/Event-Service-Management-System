@@ -2,6 +2,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+require('dotenv').config();
 
 // Routes
 const authRoutes = require('./src/routes/auth.js');
@@ -76,7 +77,7 @@ app.get("/", (req, res) => {
 // Start server
 const start = async () => {
   try {
-    await mongoose.connect('mongodb://localhost:27017/event_management');
+    await mongoose.connect('mongodb://localhost:27017/event-management');
     console.log('✅ MongoDB Connected Successfully');
     
     const PORT = 5000;

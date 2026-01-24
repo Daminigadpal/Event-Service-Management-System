@@ -100,21 +100,26 @@ export const updateEventPreference = async (preferenceData) => {
         return { min, max };
       })(),
       guestCount: (() => {
-        console.log('DEBUG: parsing guestCount in update service:', preferenceData.guestCount);
-        if (preferenceData.guestCount.includes('-')) {
-          const result = parseInt(preferenceData.guestCount.split('-')[1]);
+        console.log('DEBUG: parsing guestCount in update service:', preferenceData.guestCount, 'type:', typeof preferenceData.guestCount);
+        const guestCountValue = preferenceData.guestCount;
+        
+        // Convert to string if it's a number
+        const guestCountStr = typeof guestCountValue === 'number' ? guestCountValue.toString() : guestCountValue;
+        
+        if (guestCountStr.includes('-')) {
+          const result = parseInt(guestCountStr.split('-')[1]);
           console.log('DEBUG: parsed guestCount from range in update service:', result);
           return result;
-        } else if (preferenceData.guestCount.includes('+')) {
-          const result = parseInt(preferenceData.guestCount.replace('+', ''));
+        } else if (guestCountStr.includes('+')) {
+          const result = parseInt(guestCountStr.replace('+', ''));
           console.log('DEBUG: parsed guestCount from + in update service:', result);
           return result;
         } else {
-          const result = parseInt(preferenceData.guestCount);
+          const result = parseInt(guestCountStr);
           console.log('DEBUG: parsed guestCount direct in update service:', result);
           return result;
         }
-      })()
+      })(),
     };
 
     console.log('DEBUG: Transformed data in update service:', JSON.stringify(transformedData, null, 2));

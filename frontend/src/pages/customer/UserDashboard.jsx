@@ -49,6 +49,10 @@ const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [bookings, setBookings] = useState([]); // Add bookings state
+  const [payments, setPayments] = useState([]); // Add payments state
+  const [upcomingEvents, setUpcomingEvents] = useState([]); // Add upcoming events state
+  const [notifications, setNotifications] = useState([]); // Add notifications state
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -64,6 +68,16 @@ const UserDashboard = () => {
     completedEvents: 0,
     totalPayments: 0
   });
+
+  // Update stats with real data when available
+  const updateStats = () => {
+    setStats({
+      totalBookings: bookings.length,
+      upcomingEvents: upcomingEvents.length,
+      completedEvents: 0, // You can calculate this from bookings if needed
+      totalPayments: payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+    });
+  };
   const navigate = useNavigate();
   const { logout, user, updateUserProfile } = useAuth();
   const dashboardRef = useRef();
@@ -77,20 +91,32 @@ const UserDashboard = () => {
     console.log(' User data loaded:', user);
     if (user) {
       console.log(' Setting profile data with role:', user.role);
-      const profileData = {
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        address: user.address || '',
+      setProfile({
+        name: user.name || 'User',
+        email: user.email || 'user@example.com',
+        phone: user.phone || 'Not provided',
+        address: user.address || 'Not provided',
         role: user.role || 'user',
         department: user.department || 'Customer'
-      };
-      console.log(' Setting profile data:', profileData);
-      setProfile(profileData);
-      // Simulate loading stats
-      loadUserStats();
+      });
+      
+      // Update stats with real data
+      updateStats();
+    } else {
+      console.log('No user found in AuthContext');
+      setProfile({
+        name: 'Guest User',
+        email: 'guest@example.com',
+        phone: 'Not provided',
+        address: 'Not provided',
+        role: 'user',
+        department: 'Customer'
+      });
+      
+      // Update stats with real data
+      updateStats();
     }
-  }, [user]);
+  }, [user, bookings, upcomingEvents, payments]);
 
   const loadUserStats = async () => {
     // Simulate API call to get user statistics
@@ -246,16 +272,38 @@ const UserDashboard = () => {
                     filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.2))'
                   }} />
                 </motion.div>
-                <Typography 
-                  variant="h3" 
-                  sx={{ 
-                    fontWeight: 'bold',
-                    color: 'white',
-                    textShadow: '0px 2px 4px rgba(0,0,0,0.3)'
-                  }}
-                >
-                  {user?.name || 'User'} - {user?.role || 'user'}{user?.services?.includes('photographers') && ' - photographers'}
-                </Typography>
+                <Box>
+                  <Typography 
+                    variant="h3" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      color: 'white',
+                      textShadow: '0px 2px 4px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    Welcome back, {user?.name?.split(' ')[0] || 'User'}! 🎉
+                  </Typography>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      color: 'white',
+                      opacity: 0.9,
+                      mt: 0.5
+                    }}
+                  >
+                    {user?.role === 'admin' ? 'Administrator' : 'Customer'} Dashboard
+                  </Typography>
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: 'white',
+                      opacity: 0.7,
+                      mt: 0.5
+                    }}
+                  >
+                    Last login: {new Date().toLocaleDateString()}
+                  </Typography>
+                </Box>
               </motion.div>
               
               <motion.div
@@ -339,6 +387,8 @@ const UserDashboard = () => {
           </Container>
         </Box>
       </motion.div>
+
+      {/* Enhanced Vertical Sidebar Navigation */}
 
       {/* Enhanced Vertical Sidebar Navigation */}
       <motion.div
@@ -504,12 +554,7 @@ const UserDashboard = () => {
           style={{ flex: 1 }}
         >
           <Box sx={{ 
-            background: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: 'blur(10px)',
-            borderRadius: 2,
-            boxShadow: theme.shadows[4],
-            overflow: 'auto',
-            p: 2
+            minHeight: 'calc(100vh - 200px)' // Extended height for better visibility
           }}>
             <AnimatePresence mode="wait">
               {/* User Profile Tab */}
@@ -524,12 +569,8 @@ const UserDashboard = () => {
                   <Card sx={{ 
                     background: 'white',
                     borderRadius: 3,
-                    boxShadow: theme.shadows[6],
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[12]
-                    }
+                    boxShadow: theme.shadows[8],
+                    minHeight: 300 // Extended card height
                   }}>
                     <CardContent sx={{ p: 3 }}>
                       <motion.div
@@ -882,7 +923,7 @@ const UserDashboard = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
                       >
-                        <NotificationSystem userRole="customer" />
+                        <NotificationSystem userRole="customer" currentUser={user} />
                       </motion.div>
                     </CardContent>
                   </Card>

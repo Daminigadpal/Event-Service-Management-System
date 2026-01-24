@@ -150,6 +150,14 @@ import {
 
 const StaffDashboard = () => {
   console.log('Staff Dashboard component loaded - v2');
+  const { user, updateUserProfile, logout } = useAuth();
+  console.log('🔍 Auth context user at component start:', user);
+  console.log('🔍 User authentication check:', {
+    hasUser: !!user,
+    userName: user?.name,
+    userEmail: user?.email,
+    userRole: user?.role
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activeTab, setActiveTab] = useState(0);
@@ -255,7 +263,6 @@ const StaffDashboard = () => {
     { id: 3, title: 'Quick Responder', description: 'Response time under 1 hour', icon: <SpeedIcon />, earned: false, progress: 75 },
     { id: 4, title: 'Client Favorite', description: '20+ repeat clients', icon: <FavoriteIcon />, earned: false, progress: 60 }
   ]);
-  const { user, updateUserProfile, logout } = useAuth();
   const navigate = useNavigate();
   const dashboardRef = useRef();
 
@@ -433,7 +440,17 @@ const StaffDashboard = () => {
   }, []);
 
   useEffect(() => {
+    console.log('👤 Staff Dashboard useEffect triggered with user:', user);
+    console.log('📊 Current userBookings state:', userBookings);
+    console.log('🔍 User object details:', {
+      exists: !!user,
+      name: user?.name,
+      email: user?.email,
+      role: user?.role,
+      id: user?.id
+    });
     if (user) {
+      console.log('✅ User found, setting profile and fetching bookings');
       setProfile({
         name: user.name || '',
         email: user.email || '',
@@ -443,100 +460,102 @@ const StaffDashboard = () => {
         skills: user.skills || ['Photography', 'Event Setup']
       });
 
-      // Enhanced mock user bookings data with more details
-      const mockBookings = [
-        {
-          id: 1,
-          customerName: 'John Smith',
-          eventName: 'Wedding Ceremony',
-          date: '2024-01-15',
-          time: '14:00',
-          location: 'Grand Ballroom',
-          status: 'confirmed',
-          services: ['Photography', 'Decoration'],
-          paymentStatus: 'paid',
-          amount: 5000,
-          customerRating: 5,
-          notes: 'Special lighting setup required'
-        },
-        {
-          id: 2,
-          customerName: 'Sarah Johnson',
-          eventName: 'Corporate Event',
-          date: '2024-01-18',
-          time: '10:00',
-          location: 'Conference Hall A',
-          status: 'pending',
-          services: ['Videography', 'Catering'],
-          paymentStatus: 'pending',
-          amount: 3500,
-          customerRating: 0,
-          notes: 'Client prefers natural lighting'
-        },
-        {
-          id: 3,
-          customerName: 'Mike Wilson',
-          eventName: 'Birthday Party',
-          date: '2024-01-20',
-          time: '18:00',
-          location: 'Garden Area',
-          status: 'completed',
-          services: ['Photography', 'Entertainment'],
-          paymentStatus: 'paid',
-          amount: 2500,
-          customerRating: 4.5,
-          notes: 'Outdoor event, weather backup needed'
-        },
-        {
-          id: 4,
-          customerName: 'Emily Davis',
-          eventName: 'Product Launch',
-          date: '2024-01-25',
-          time: '15:00',
-          location: 'Rooftop Venue',
-          status: 'confirmed',
-          services: ['Photography', 'Live Streaming'],
-          paymentStatus: 'paid',
-          amount: 4500,
-          customerRating: 0,
-          notes: 'Live streaming to social media required'
+      // Fetch real booking data for staff
+      const fetchStaffBookings = async () => {
+        try {
+          console.log('🔍 Starting to fetch staff bookings...');
+          console.log('🚨 DEBUG: About to call getBookings API...');
+          const { getBookings } = await import('../../services/bookingService.js');
+          console.log('📞 Calling getBookings API...');
+          const response = await getBookings();
+          console.log('🚨 DEBUG: API call completed!');
+          console.log('📊 API Response:', response);
+          
+          if (!response.data || !Array.isArray(response.data)) {
+            console.error('❌ Invalid response data:', response);
+            setUserBookings([]);
+            return;
+          }
+          
+          console.log(`✅ Received ${response.data.length} bookings from API`);
+          
+          // Transform the data to match the expected format
+          const transformedBookings = response.data.map(booking => ({
+            id: booking._id,
+            customerName: booking.customer?.name || 'Unknown Customer',
+            eventName: booking.eventType || 'Event',
+            date: new Date(booking.eventDate).toISOString().split('T')[0],
+            time: new Date(booking.eventDate).toTimeString().split(' ')[0].substring(0, 5),
+            location: booking.eventLocation || 'TBD',
+            status: booking.status || 'inquiry',
+            services: booking.service ? [booking.service.name] : ['General Service'],
+            paymentStatus: booking.paymentStatus || 'pending',
+            amount: booking.quotedPrice || 0,
+            customerRating: 0, // This would need to be added to the schema
+            notes: booking.specialRequests || booking.internalNotes || '',
+            service: booking.service,
+            customer: booking.customer,
+            specialRequests: booking.specialRequests,
+            internalNotes: booking.internalNotes
+          }));
+
+          console.log('🔄 Transformed bookings:', transformedBookings);
+          setUserBookings(transformedBookings);
+          
+          // Calculate statistics based on real data
+          const completed = transformedBookings.filter(b => b.status === 'completed').length;
+          const pending = transformedBookings.filter(b => b.status === 'inquiry' || b.status === 'pending').length;
+          const confirmed = transformedBookings.filter(b => b.status === 'confirmed').length;
+          const upcoming = transformedBookings.filter(b => new Date(b.date) > new Date()).length;
+          const totalEarnings = transformedBookings
+            .filter(b => b.paymentStatus === 'paid')
+            .reduce((sum, b) => sum + b.amount, 0);
+          const avgRating = transformedBookings
+            .filter(b => b.customerRating > 0)
+            .reduce((sum, b) => sum + b.customerRating, 0) / 
+            transformedBookings.filter(b => b.customerRating > 0).length || 0;
+
+          setStats({
+            totalBookings: transformedBookings.length,
+            completedBookings: completed,
+            pendingBookings: pending,
+            upcomingEvents: upcoming,
+            earnings: totalEarnings,
+            rating: avgRating || 4.8,
+            responseTime: 2.5,
+            completionRate: transformedBookings.length > 0 ? Math.round((completed / transformedBookings.length) * 100) : 0,
+            clientSatisfaction: Math.round((avgRating || 4.8) * 20),
+            monthlyGrowth: 12,
+            activeProjects: confirmed + pending,
+            totalClients: transformedBookings.length,
+            repeatClients: Math.round(transformedBookings.length * 0.4)
+          });
+
+          console.log('📊 Stats set:', {
+            totalBookings: transformedBookings.length,
+            completedBookings: completed,
+            pendingBookings: pending,
+            upcomingEvents: upcoming
+          });
+
+        } catch (error) {
+          console.error('❌ Error fetching staff bookings:', error);
+          console.error('❌ Error details:', {
+            message: error.message,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data
+          });
+          // Fallback to empty array if API fails
+          setUserBookings([]);
+        } finally {
+          setLoading(false);
         }
-      ];
+      };
 
-      setUserBookings(mockBookings);
-      
-      // Calculate statistics
-      const completed = mockBookings.filter(b => b.status === 'completed').length;
-      const pending = mockBookings.filter(b => b.status === 'pending').length;
-      const confirmed = mockBookings.filter(b => b.status === 'confirmed').length;
-      const upcoming = mockBookings.filter(b => new Date(b.date) > new Date()).length;
-      const totalEarnings = mockBookings
-        .filter(b => b.paymentStatus === 'paid')
-        .reduce((sum, b) => sum + b.amount, 0);
-      const avgRating = mockBookings
-        .filter(b => b.customerRating > 0)
-        .reduce((sum, b) => sum + b.customerRating, 0) / 
-        mockBookings.filter(b => b.customerRating > 0).length || 0;
-
-      setStats({
-        totalBookings: mockBookings.length,
-        completedBookings: completed,
-        pendingBookings: pending,
-        upcomingEvents: upcoming,
-        earnings: totalEarnings,
-        rating: avgRating || 4.8,
-        responseTime: 2.5,
-        completionRate: Math.round((completed / mockBookings.length) * 100),
-        clientSatisfaction: Math.round((avgRating || 4.8) * 20),
-        monthlyGrowth: 12,
-        activeProjects: confirmed + pending,
-        totalClients: mockBookings.length,
-        repeatClients: Math.round(mockBookings.length * 0.4)
-      });
-
-      setLoading(false);
+      fetchStaffBookings();
     }
-  }, [user]); // Add user as dependency to re-run when user data changes
+  }, [user]);
 
   const handleTabChange = (event, newValue) => {
     console.log('Tab changed to:', newValue);
@@ -549,10 +568,68 @@ const StaffDashboard = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Simulate data refresh
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setRefreshing(false);
-    toast.success('Dashboard refreshed successfully!');
+    try {
+      const { getBookings } = await import('../../services/bookingService.js');
+      const response = await getBookings();
+      
+      // Transform the data to match the expected format
+      const transformedBookings = response.data.map(booking => ({
+        id: booking._id,
+        customerName: booking.customer?.name || 'Unknown Customer',
+        eventName: booking.eventType || 'Event',
+        date: new Date(booking.eventDate).toISOString().split('T')[0],
+        time: new Date(booking.eventDate).toTimeString().split(' ')[0].substring(0, 5),
+        location: booking.eventLocation || 'TBD',
+        status: booking.status || 'inquiry',
+        services: booking.service ? [booking.service.name] : ['General Service'],
+        paymentStatus: booking.paymentStatus || 'pending',
+        amount: booking.quotedPrice || 0,
+        customerRating: 0,
+        notes: booking.specialRequests || booking.internalNotes || '',
+        service: booking.service,
+        customer: booking.customer,
+        specialRequests: booking.specialRequests,
+        internalNotes: booking.internalNotes
+      }));
+
+      setUserBookings(transformedBookings);
+      
+      // Recalculate statistics
+      const completed = transformedBookings.filter(b => b.status === 'completed').length;
+      const pending = transformedBookings.filter(b => b.status === 'inquiry' || b.status === 'pending').length;
+      const confirmed = transformedBookings.filter(b => b.status === 'confirmed').length;
+      const upcoming = transformedBookings.filter(b => new Date(b.date) > new Date()).length;
+      const totalEarnings = transformedBookings
+        .filter(b => b.paymentStatus === 'paid')
+        .reduce((sum, b) => sum + b.amount, 0);
+      const avgRating = transformedBookings
+        .filter(b => b.customerRating > 0)
+        .reduce((sum, b) => sum + b.customerRating, 0) / 
+        transformedBookings.filter(b => b.customerRating > 0).length || 0;
+
+      setStats({
+        totalBookings: transformedBookings.length,
+        completedBookings: completed,
+        pendingBookings: pending,
+        upcomingEvents: upcoming,
+        earnings: totalEarnings,
+        rating: avgRating || 4.8,
+        responseTime: 2.5,
+        completionRate: transformedBookings.length > 0 ? Math.round((completed / transformedBookings.length) * 100) : 0,
+        clientSatisfaction: Math.round((avgRating || 4.8) * 20),
+        monthlyGrowth: 12,
+        activeProjects: confirmed + pending,
+        totalClients: transformedBookings.length,
+        repeatClients: Math.round(transformedBookings.length * 0.4)
+      });
+
+      toast.success('Dashboard refreshed successfully!');
+    } catch (error) {
+      console.error('Error refreshing bookings:', error);
+      toast.error('Failed to refresh data');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleQuickAction = (action) => {
@@ -1418,11 +1495,10 @@ const StaffDashboard = () => {
             </IconButton>
           )}
           
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, justifyContent: 'center' }}>
             <Avatar 
               sx={{ 
                 bgcolor: 'white', 
-                color: theme.palette.primary.main,
                 mr: 2,
                 width: 40,
                 height: 40
@@ -1430,8 +1506,22 @@ const StaffDashboard = () => {
             >
               <DashboardIcon />
             </Avatar>
-            <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-              Staff Dashboard
+            <Typography variant="h4" component="div" sx={{ 
+              fontWeight: 'bold', 
+              color: 'primary.main',
+              fontSize: '1.8rem',
+              textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+              letterSpacing: '0.5px',
+              opacity: 1,
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              -dashboard-photograph
             </Typography>
           </Box>
 
@@ -2802,6 +2892,12 @@ const StaffDashboard = () => {
                       color="warning" 
                       size="small"
                     />
+                    {/* Debug info */}
+                    <Chip 
+                      label={`DEBUG: stats.total=${stats.totalBookings} userBookings=${userBookings.length}`} 
+                      color="error" 
+                      size="small"
+                    />
                   </Box>
                 </Box>
 
@@ -3053,6 +3149,35 @@ const StaffDashboard = () => {
             }}>
               <CardContent sx={{ p: 0 }}>
                 <NotificationSystem userRole="staff" />
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+        {/* Booking Management Tab */}
+        {activeTab === 5 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card sx={{ 
+              background: 'white',
+              borderRadius: 3,
+              boxShadow: theme.shadows[6],
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: theme.shadows[12]
+              }
+            }}>
+              <CardContent sx={{ p: 0 }}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  <BookingManagement />
+                </motion.div>
               </CardContent>
             </Card>
           </motion.div>
